@@ -1,4 +1,4 @@
-
+from sqlalchemy import Numeric
 from sqlalchemy import (
     Column,
     Integer,
@@ -14,6 +14,17 @@ from app.db.session import Base
 
 
 class Submission(Base):
+
+    score = Column(Numeric(8, 2), nullable=True)
+
+    feedback = Column(Text, nullable=True)
+
+    graded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    graded_at = Column(
+       DateTime(timezone=True),
+       nullable=True
+    )
     __tablename__ = "submissions"
 
     __table_args__ = (

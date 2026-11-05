@@ -1,4 +1,4 @@
-
+from decimal import Decimal
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
@@ -12,6 +12,11 @@ class SubmissionRead(BaseModel):
     original_filename: str | None
     submitted_at: datetime
     updated_at: datetime
+
+    score: Decimal | None
+    feedback: str | None
+    graded_by: int | None
+    graded_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
 
