@@ -4,7 +4,7 @@ from app.models.enrollment import Enrollment
 from app.models.material import Material
 from app.models.assignment import Assignment
 from app.models.submission import Submission
-
+from app.models.meeting import Meeting
 __all__ = [
     "User",
     "UserRole",
