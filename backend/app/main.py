@@ -8,6 +8,7 @@ from app.api.materials import router as materials_router
 from app.api.assignments import router as assignments_router
 from app.api.submissions import router as submissions_router
 from app.api.meetings import router as meetings_router
+from app.api.attendance import router as attendance_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -24,7 +25,7 @@ app.include_router(materials_router)
 app.include_router(assignments_router)
 app.include_router(submissions_router)
 app.include_router(meetings_router)
-
+app.include_router(attendance_router)
 
 @app.get("/")
 def home():
