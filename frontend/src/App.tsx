@@ -5,10 +5,14 @@ import EditMeetingForm from './components/EditMeetingForm'
 import TrackedClassroom from './components/TrackedClassroom'
 import AttendanceManager from './components/AttendanceManager'
 import AutomaticAttendanceReport from './components/AutomaticAttendanceReport'
+import CourseMaterials from './components/CourseMaterials'
+import CourseAssignments from './components/CourseAssignments'
 import Sidebar, {
   type DashboardPage,
 } from './components/Sidebar'
-
+import CourseSubNav, {
+  type CourseSection,
+} from './components/CourseSubNav'
 type Account = {
   full_name: string
   role: string
@@ -113,9 +117,14 @@ export default function App() {
   useState<number | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
+  
+
 
   const [selectedCourseId, setSelectedCourseId] =
     useState<number | null>(null)
+  
+  const [courseSection, setCourseSection] =
+  useState<CourseSection>('overview')  
 
   const [roomName, setRoomName] = useState('')
   const [error, setError] = useState('')
@@ -186,7 +195,7 @@ export default function App() {
     setAttendanceMeetingId(null)
     setActiveMeetingId(null)
     setAutoReportMeetingId(null)
-
+    setCourseSection('overview')
     try {
       const result = await apiRequest<Meeting[]>(
         `/api/meetings/courses/${courseId}`,
@@ -431,13 +440,11 @@ async function cancelMeeting(meeting: Meeting) {
                     </p>
 
                     <button
-                      disabled={loading}
-                      onClick={() =>
-                        selectCourse(course.id)
-                      }
-                    >
-                      View Meetings
-                    </button>
+  disabled={loading}
+  onClick={() => selectCourse(course.id)}
+>
+  Open Course
+</button>
                   </article>
                 ))}
               </div>
@@ -446,17 +453,77 @@ async function cancelMeeting(meeting: Meeting) {
                 <p>No courses available.</p>
               )}
             </section>
-{selectedCourseId !== null && canManageMeetings && (
+
+
+{/* Course Sub-Navigation */}
+{selectedCourseId !== null && (
+  <>
+    <section className="panel">
+      <h2>
+        {courses.find(
+          (course) => course.id === selectedCourseId
+        )?.title || 'Selected Course'}
+      </h2>
+
+      <CourseSubNav
+        activeSection={courseSection}
+        onChange={setCourseSection}
+      />
+    </section>
+
+    {/* Course Overview */}
+    {courseSection === 'overview' && (
+      <section className="panel">
+        <h2>Course Overview</h2>
+
+        <p>
+          {courses.find(
+            (course) => course.id === selectedCourseId
+          )?.description ||
+            'Welcome to this course.'}
+        </p>
+
+        <p>
+          Select Course Materials, Assignments,
+          or Meetings from the navigation above.
+        </p>
+      </section>
+    )}
+  </>
+)}
+
+{selectedCourseId !== null &&
+  courseSection === 'meetings' &&
+  canManageMeetings && (
   <ScheduleMeetingForm
     courseId={selectedCourseId}
     token={token}
     onCreated={() => selectCourse(selectedCourseId)}
   />
 )}
-            {selectedCourseId !== null && (
 
-              
-              <section className="panel">
+{/* Course learning materials */}
+{selectedCourseId !== null &&
+  courseSection === 'materials' && (
+    <CourseMaterials
+      courseId={selectedCourseId}
+      token={token}
+    />
+  )}
+
+{/* NEW: Course Assignments */}
+{selectedCourseId !== null &&
+  courseSection === 'assignments' && (
+    <CourseAssignments
+      courseId={selectedCourseId}
+      token={token}
+      role={account.role}
+    />
+  )}
+
+            {selectedCourseId !== null &&
+  courseSection === 'meetings' && (
+  <section className="panel">
                 <h2>Scheduled Meetings</h2>
 
                 {loading && <p>Loading meetings...</p>}

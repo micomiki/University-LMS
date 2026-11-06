@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-
+from fastapi.responses import FileResponse
 from app.schemas.grading import GradeSubmission
 from pathlib import Path
 
@@ -370,4 +370,82 @@ def grade_submission(
     db.refresh(submission)
 
     return submission
+
+@router.get("/{submission_id}/download")
+def download_submission_file(
+    submission_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    submission = db.get(Submission, submission_id)
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found.",
+        )
+
+    assignment = db.get(Assignment, submission.assignment_id)
+
+    if not assignment:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found.",
+        )
+
+    if current_user.role == UserRole.STUDENT:
+        if submission.student_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied.",
+            )
+
+    elif current_user.role == UserRole.PROFESSOR:
+        course = db.get(Course, assignment.course_id)
+
+        if not course or course.professor_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied.",
+            )
+
+    elif current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied.",
+        )
+
+    if not submission.stored_filename:
+        raise HTTPException(
+            status_code=404,
+            detail="No file attached to this submission.",
+        )
+
+    stored_name = submission.stored_filename
+
+    if Path(stored_name).name != stored_name:
+        raise HTTPException(
+            status_code=404,
+            detail="Invalid stored filename.",
+        )
+
+    upload_dir = (
+        Path(__file__).resolve().parents[2]
+        / "uploads"
+        / "assignment_submissions"
+    )
+
+    file_path = upload_dir / stored_name
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Submission file not found.",
+        )
+
+    return FileResponse(
+        path=file_path,
+        filename=submission.original_filename or "submission",
+        media_type="application/octet-stream",
+    )
 
