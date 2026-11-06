@@ -46,4 +46,7 @@ class MeetingRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
+class MeetingLinkRead(BaseModel):
+    id: int
+    meeting_url: str
+    status: str

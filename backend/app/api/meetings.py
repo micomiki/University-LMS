@@ -1,13 +1,13 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+import secrets
 from app.db.session import get_db
 from app.models.meeting import Meeting
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
-from app.schemas.meeting import MeetingCreate, MeetingUpdate, MeetingRead
+from app.schemas.meeting import MeetingCreate, MeetingUpdate, MeetingRead, MeetingLinkRead
 from app.api.dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/api/meetings", tags=["Meetings"])
@@ -176,4 +176,138 @@ def cancel_meeting(
     db.refresh(meeting)
 
     return meeting
+
+def check_video_access(
+    meeting: Meeting,
+    db: Session,
+    current_user: User,
+):
+    if current_user.role == UserRole.ADMIN:
+        return
+
+    if current_user.role == UserRole.PROFESSOR:
+        course = db.query(Course).filter(
+            Course.id == meeting.course_id
+        ).first()
+
+        if not course or course.professor_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied.",
+            )
+        return
+
+    if current_user.role == UserRole.STUDENT:
+        enrollment = db.query(Enrollment).filter(
+            Enrollment.course_id == meeting.course_id,
+            Enrollment.student_id == current_user.id,
+        ).first()
+
+        if not enrollment:
+            raise HTTPException(
+                status_code=403,
+                detail="You are not enrolled in this course.",
+            )
+        return
+
+    raise HTTPException(
+        status_code=403,
+        detail="Access denied.",
+    )
+
+
+@router.post(
+    "/{meeting_id}/room",
+    response_model=MeetingLinkRead,
+)
+def create_video_room(
+    meeting_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    meeting = db.query(Meeting).filter(
+        Meeting.id == meeting_id
+    ).first()
+
+    if not meeting:
+        raise HTTPException(
+            status_code=404,
+            detail="Meeting not found.",
+        )
+
+    # Only admins and assigned professors
+    # can configure meeting rooms.
+    if current_user.role not in (
+        UserRole.ADMIN,
+        UserRole.PROFESSOR,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied.",
+        )
+
+    check_video_access(meeting, db, current_user)
+
+    if meeting.status != "scheduled":
+        raise HTTPException(
+            status_code=409,
+            detail="Meeting is not scheduled.",
+        )
+
+    # Keep an existing meeting URL.
+    if not meeting.meeting_url:
+        room_name = "UniLMS-" + secrets.token_hex(16)
+
+        meeting.meeting_url = (
+            f"https://meet.jit.si/{room_name}"
+        )
+
+        db.commit()
+        db.refresh(meeting)
+
+    return MeetingLinkRead(
+        id=meeting.id,
+        meeting_url=meeting.meeting_url,
+        status=meeting.status,
+    )
+
+
+@router.get(
+    "/{meeting_id}/join",
+    response_model=MeetingLinkRead,
+)
+def join_video_room(
+    meeting_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    meeting = db.query(Meeting).filter(
+        Meeting.id == meeting_id
+    ).first()
+
+    if not meeting:
+        raise HTTPException(
+            status_code=404,
+            detail="Meeting not found.",
+        )
+
+    check_video_access(meeting, db, current_user)
+
+    if meeting.status != "scheduled":
+        raise HTTPException(
+            status_code=409,
+            detail="This meeting is not available.",
+        )
+
+    if not meeting.meeting_url:
+        raise HTTPException(
+            status_code=409,
+            detail="The professor has not configured the meeting room.",
+        )
+
+    return MeetingLinkRead(
+        id=meeting.id,
+        meeting_url=meeting.meeting_url,
+        status=meeting.status,
+    )
 

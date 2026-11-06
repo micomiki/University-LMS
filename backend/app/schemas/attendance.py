@@ -25,3 +25,9 @@ class AttendanceRead(BaseModel):
     marked_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class AttendanceRosterItem(BaseModel):
+    student_id: int
+    full_name: str
+    attendance_id: int | None = None
+    status: str | None = None    
