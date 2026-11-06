@@ -2,8 +2,9 @@
 import { useState, type FormEvent } from 'react'
 import ScheduleMeetingForm from './components/ScheduleMeetingForm'
 import EditMeetingForm from './components/EditMeetingForm'
-import { JitsiMeeting } from '@jitsi/react-sdk'
+import TrackedClassroom from './components/TrackedClassroom'
 import AttendanceManager from './components/AttendanceManager'
+import AutomaticAttendanceReport from './components/AutomaticAttendanceReport'
 import Sidebar, {
   type DashboardPage,
 } from './components/Sidebar'
@@ -104,10 +105,12 @@ export default function App() {
   useState<number | null>(null)
   const [account, setAccount] =
     useState<Account | null>(null)
-
+  const [activeMeetingId, setActiveMeetingId] =
+  useState<number | null>(null)
   const [page, setPage] =
     useState<DashboardPage>('dashboard')
-
+  const [autoReportMeetingId, setAutoReportMeetingId] =
+  useState<number | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
 
@@ -181,6 +184,8 @@ export default function App() {
     setLoading(true)
     setEditingMeetingId(null)
     setAttendanceMeetingId(null)
+    setActiveMeetingId(null)
+    setAutoReportMeetingId(null)
 
     try {
       const result = await apiRequest<Meeting[]>(
@@ -227,6 +232,7 @@ export default function App() {
 
       const room = getJitsiRoom(result.meeting_url)
 
+      setActiveMeetingId(meeting.id)
       setRoomName(room)
       setPage('classroom')
     } catch (err) {
@@ -287,6 +293,8 @@ async function cancelMeeting(meeting: Meeting) {
     setPassword('')
     setAttendanceMeetingId(null)
     setPage('dashboard')
+    setActiveMeetingId(null)
+    setAutoReportMeetingId(null)
   }
 
   if (!account) {
@@ -576,6 +584,34 @@ async function cancelMeeting(meeting: Meeting) {
     />
   )}
   
+{/* Automatic Attendance Report */}
+
+{canManageMeetings && (
+  <button
+    type="button"
+    className="btn-secondary"
+    onClick={() =>
+      setAutoReportMeetingId(
+        autoReportMeetingId === meeting.id
+          ? null
+          : meeting.id
+      )
+    }
+  >
+    {autoReportMeetingId === meeting.id
+      ? 'Hide Automatic Report'
+      : 'Automatic Attendance Report'}
+  </button>
+)}
+
+{canManageMeetings &&
+  autoReportMeetingId === meeting.id && (
+    <AutomaticAttendanceReport
+      meetingId={meeting.id}
+      token={token}
+    />
+  )}
+
   </article>
 ))}
 
@@ -596,24 +632,19 @@ async function cancelMeeting(meeting: Meeting) {
                   Close Classroom
                 </button>
 
-                <JitsiMeeting
-                  domain="meet.jit.si"
-                  roomName={roomName}
-                  userInfo={{
-                    displayName: account.full_name,
-                  }}
-                  configOverwrite={{
-                    startWithAudioMuted: true,
-                    startWithVideoMuted: true,
-                  }}
-                  onReadyToClose={() =>
-                    setRoomName('')
-                  }
-                  getIFrameRef={(element) => {
-                    element.style.width = '100%'
-                    element.style.height = '70vh'
-                  }}
-                />
+                {activeMeetingId !== null && (
+  <TrackedClassroom
+    meetingId={activeMeetingId}
+    roomName={roomName}
+    token={token}
+    role={account.role}
+    displayName={account.full_name}
+    onClose={() => {
+      setRoomName('')
+      setActiveMeetingId(null)
+    }}
+  />
+)}
               </>
             ) : (
               <>
