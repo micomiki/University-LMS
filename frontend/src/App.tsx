@@ -5,6 +5,7 @@ import EditMeetingForm from './components/EditMeetingForm'
 import TrackedClassroom from './components/TrackedClassroom'
 import AttendanceManager from './components/AttendanceManager'
 import AutomaticAttendanceReport from './components/AutomaticAttendanceReport'
+import RoleDashboard from './components/RoleDashboard'
 import CourseMaterials from './components/CourseMaterials'
 import CourseAssignments from './components/CourseAssignments'
 import Sidebar, {
@@ -351,7 +352,11 @@ async function cancelMeeting(meeting: Meeting) {
       </main>
     )
   }
-
+async function openAssignmentFromDashboard(courseId: number) {
+  setPage('courses')
+  await selectCourse(courseId)
+  setCourseSection('assignments')
+}
   return (
     <div className="lms-shell">
       <Sidebar
@@ -381,45 +386,41 @@ async function cancelMeeting(meeting: Meeting) {
           </p>
         )}
 
-        {page === 'dashboard' && (
-          <>
-            <section className="panel">
-              <h2>Welcome, {account.full_name}</h2>
-              <p>
-                You are logged in as a{' '}
-                <strong>{account.role}</strong>.
-              </p>
-            </section>
+        
+{page === 'dashboard' && (
+  <>
+    <section className="panel">
+      <h2>Welcome, {account.full_name}</h2>
+      <p>
+        You are logged in as a{' '}
+        <strong>{account.role}</strong>.
+      </p>
+    </section>
 
-            <div className="lms-stat-grid">
-              <div className="lms-stat-card">
-                <span>Available Courses</span>
-                <strong>{courses.length}</strong>
-              </div>
+    {account.role.toLowerCase() === 'admin' ? (
+      <section className="panel">
+        <h2>Administration</h2>
+        <p>{courses.length} courses available to manage.</p>
+        <button
+          type="button"
+          onClick={() => setPage('courses')}
+        >
+          Manage courses
+        </button>
+      </section>
+    ) : (
+      <RoleDashboard
+        role={account.role}
+        token={token}
+        courses={courses}
+        onOpenAssignment={(courseId) => {
+          void openAssignmentFromDashboard(courseId)
+        }}
+      />
+    )}
+  </>
+)}
 
-              <div className="lms-stat-card">
-                <span>Your Role</span>
-                <strong className="lms-role">
-                  {account.role}
-                </strong>
-              </div>
-            </div>
-
-            <section className="panel">
-              <h2>Getting Started</h2>
-              <p>
-                View your courses and their scheduled
-                online classes.
-              </p>
-
-              <button
-                onClick={() => setPage('courses')}
-              >
-                Browse Courses
-              </button>
-            </section>
-          </>
-        )}
 
         {page === 'courses' && (
           <>
