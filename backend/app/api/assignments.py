@@ -1,7 +1,8 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+from sqlalchemy.exc import IntegrityError
+from app.models.submission import Submission
 from app.db.session import get_db
 from app.models.assignment import Assignment
 from app.models.course import Course
@@ -140,25 +141,77 @@ def update_assignment(
     return assignment
 
 
-@router.delete("/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+
+@router.delete("/{assignment_id}")
 def delete_assignment(
     assignment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(
-        require_roles(UserRole.PROFESSOR, UserRole.ADMIN)
-    ),
+    current_user: User = Depends(get_current_user),
 ):
-    assignment = db.query(Assignment).filter(
-        Assignment.id == assignment_id
-    ).first()
+    assignment = db.get(Assignment, assignment_id)
 
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found.",
+        )
 
-    check_course_access(assignment.course_id, current_user, db)
+    course = db.get(Course, assignment.course_id)
 
-    db.delete(assignment)
-    db.commit()
+    if not course:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found.",
+        )
 
-    return None
+    # Only admins or the assigned professor can delete.
+    if current_user.role == UserRole.PROFESSOR:
+        if course.professor_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You cannot delete this assignment.",
+            )
+
+    elif current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Only professors and admins can delete assignments.",
+        )
+
+    # Protect student submissions and grades.
+    existing_submission = (
+        db.query(Submission.id)
+        .filter(
+            Submission.assignment_id == assignment_id
+        )
+        .first()
+    )
+
+    if existing_submission is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This assignment has student submissions "
+                "and cannot be deleted."
+            ),
+        )
+
+    try:
+        db.delete(assignment)
+        db.commit()
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This assignment has related records "
+                "and cannot be deleted."
+            ),
+        )
+
+    return {
+        "message": "Assignment deleted successfully."
+    }
 

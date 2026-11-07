@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import AssignmentGrading from './AssignmentGrading'
 import CreateAssignmentForm from './CreateAssignmentForm'
+import EditAssignmentForm from './EditAssignmentForm'
 import AssignmentSubmissionForm, {
   type StudentSubmission,
 } from './AssignmentSubmissionForm'
@@ -41,10 +42,12 @@ export default function CourseAssignments({
   const [refreshKey, setRefreshKey] = useState(0)
   const [submissions, setSubmissions] =
     useState<StudentSubmission[]>([])
-
+  const [deletingAssignmentId, setDeletingAssignmentId] =
+  useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  
+  const [editingAssignmentId, setEditingAssignmentId] =
+  useState<number | null>(null)
   const isStudent = role.toLowerCase() === 'student'
   const canGrade =
   role.toLowerCase() === 'professor' ||
@@ -156,6 +159,57 @@ export default function CourseAssignments({
     return () => controller.abort()
   }, [courseId, token, isStudent, refreshKey])
 
+
+  
+async function deleteAssignment(assignment: Assignment) {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete "${assignment.title}"?\n\n` +
+    'This action cannot be undone.'
+  )
+
+  if (!confirmed) return
+
+  setDeletingAssignmentId(assignment.id)
+  setError('')
+
+  try {
+    const response = await fetch(
+      `/api/assignments/${assignment.id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+
+      throw new Error(
+        typeof data?.detail === 'string'
+          ? data.detail
+          : `Deletion failed (${response.status}).`
+      )
+    }
+
+    setEditingAssignmentId(null)
+
+    // Reload assignments from the backend.
+    setRefreshKey((previous) => previous + 1)
+
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Unable to delete assignment.'
+    )
+  } finally {
+    setDeletingAssignmentId(null)
+  }
+}
+
+
   return (
     <section className="panel">
       <h2>Course Assignments</h2>
@@ -239,7 +293,63 @@ export default function CourseAssignments({
                     <strong>Maximum Score:</strong>{' '}
                     {assignment.max_score}
                   </p>
+
+
                 </div>
+                
+{/* Professor assignment editing */}
+
+{/* Professor assignment management */}
+{canGrade && (
+  <div className="assignment-manage">
+
+    {editingAssignmentId !== assignment.id && (
+      <div className="assignment-manage-actions">
+
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() =>
+            setEditingAssignmentId(assignment.id)
+          }
+        >
+          Edit Assignment
+        </button>
+
+        <button
+          type="button"
+          className="btn-danger"
+          disabled={deletingAssignmentId !== null}
+          onClick={() =>
+            void deleteAssignment(assignment)
+          }
+        >
+          {deletingAssignmentId === assignment.id
+            ? 'Deleting...'
+            : 'Delete Assignment'}
+        </button>
+
+      </div>
+    )}
+
+    {editingAssignmentId === assignment.id && (
+      <EditAssignmentForm
+        assignment={assignment}
+        token={token}
+        onSaved={() => {
+          setEditingAssignmentId(null)
+          setRefreshKey((n) => n + 1)
+        }}
+        onCancel={() =>
+          setEditingAssignmentId(null)
+        }
+      />
+    )}
+
+  </div>
+)}
+
+
 
                 {isStudent && (
                   <AssignmentSubmissionForm

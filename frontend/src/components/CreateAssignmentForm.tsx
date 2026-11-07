@@ -21,7 +21,8 @@ export default function CreateAssignmentForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-
+  const [allowMultipleSubmissions, setAllowMultipleSubmissions] =
+  useState(false)
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -67,6 +68,7 @@ export default function CreateAssignmentForm({
             instructions: instructions.trim() || null,
             due_at: deadline.toISOString(),
             max_score: score,
+            allow_multiple_submissions: allowMultipleSubmissions,
           }),
         }
       )
@@ -86,6 +88,7 @@ export default function CreateAssignmentForm({
       setInstructions('')
       setDueAt('')
       setMaxScore('100')
+      setAllowMultipleSubmissions(false)
       setOpen(false)
       setMessage('Assignment created successfully.')
 
@@ -185,6 +188,62 @@ export default function CreateAssignmentForm({
             onChange={(e) => setMaxScore(e.target.value)}
             required
           />
+          
+
+<fieldset className="submission-policy">
+  <legend>Submission Policy</legend>
+
+  <div className="policy-options">
+    <label
+      className={`policy-option ${
+        !allowMultipleSubmissions ? 'selected' : ''
+      }`}
+    >
+      <input
+        type="radio"
+        name="submissionPolicy"
+        value="single"
+        checked={!allowMultipleSubmissions}
+        onChange={() =>
+          setAllowMultipleSubmissions(false)
+        }
+      />
+
+      <span className="policy-option-content">
+        <strong>Single Submission</strong>
+        <small>
+          One active submission. Students can edit or
+          remove it before the deadline.
+        </small>
+      </span>
+    </label>
+
+    <label
+      className={`policy-option ${
+        allowMultipleSubmissions ? 'selected' : ''
+      }`}
+    >
+      <input
+        type="radio"
+        name="submissionPolicy"
+        value="multiple"
+        checked={allowMultipleSubmissions}
+        onChange={() =>
+          setAllowMultipleSubmissions(true)
+        }
+      />
+
+      <span className="policy-option-content">
+        <strong>Multiple Submissions</strong>
+        <small>
+          Students can submit additional attempts until
+          the deadline. Earlier attempts are preserved.
+        </small>
+      </span>
+    </label>
+  </div>
+</fieldset>
+
 
           <div className="submission-actions">
             <button type="submit" disabled={loading}>

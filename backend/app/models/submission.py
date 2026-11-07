@@ -7,7 +7,8 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     UniqueConstraint,
-    func
+    func,
+    Boolean
 )
 
 from app.db.session import Base
@@ -68,4 +69,10 @@ class Submission(Base):
         onupdate=func.now(),
         nullable=False
     )
+    is_withdrawn = Column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default="false",
+)
 

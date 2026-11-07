@@ -7,6 +7,7 @@ from app.models.submission import Submission
 from app.models.meeting import Meeting
 from app.models.attendance import Attendance
 from app.models.attendance_session import AttendanceSession
+from app.models.submission_attempt import SubmissionAttempt
 __all__ = [
     "User",
     "UserRole",

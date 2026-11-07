@@ -8,7 +8,8 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     CheckConstraint,
-    func
+    func,
+    Boolean
 )
 
 from app.db.session import Base
@@ -52,4 +53,11 @@ class Assignment(Base):
         server_default=func.now(),
         nullable=False
     )
+
+    allow_multiple_submissions = Column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default="false",
+)
 
