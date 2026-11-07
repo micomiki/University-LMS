@@ -10,6 +10,7 @@ import io
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
+from app.models.notification import Notification
 
 import pytest
 from fastapi import HTTPException, UploadFile
@@ -54,10 +55,11 @@ def past(minutes=30):
 def make_assignment(*, multiple=False, due_at=None):
     return SimpleNamespace(
         id=ASSIGNMENT_ID,
+        title="Test Assignment",
         course_id=COURSE_ID,
         due_at=due_at if due_at is not None else future(),
         allow_multiple_submissions=multiple,
-        max_score=Decimal('100'),
+        max_score=Decimal("100"),
     )
 
 
@@ -131,6 +133,7 @@ class FakeDB:
         self.attempts = list(attempts or [])
         self.enrolled = enrolled
         self.commit_count = 0
+        self.notifications = []
 
     def get(self, model, pk):
         if model is Assignment:
@@ -151,12 +154,19 @@ class FakeDB:
             if obj.id is None:
                 obj.id = SUBMISSION_ID
             self.submission = obj
+
         elif isinstance(obj, SubmissionAttempt):
             if obj.id is None:
                 obj.id = 70 + len(self.attempts) + 1
             self.attempts.append(obj)
+
+        elif isinstance(obj, Notification):
+            self.notifications.append(obj)
+
         else:
-            raise AssertionError(f'Unexpected added object: {type(obj)}')
+            raise AssertionError(
+                f"Unexpected added object: {type(obj)}"
+            )
 
     def flush(self):
         pass
