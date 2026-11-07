@@ -1,0 +1,43 @@
+/* Phase 12.1: status tracking, distinct from the deadline badge. */
+.assignment-progress {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.assignment-progress--not-submitted {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.assignment-progress--missing {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.assignment-progress--submitted {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.assignment-progress--under-review {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.assignment-progress--graded {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}

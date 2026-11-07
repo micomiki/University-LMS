@@ -6,6 +6,9 @@ import CreateAssignmentForm from './CreateAssignmentForm'
 import EditAssignmentForm from './EditAssignmentForm'
 import AddNewSubmissionForm from './AddNewSubmissionForm'
 import FinalSubmissionSummary from './FinalSubmissionSummary'
+import AssignmentProgressBadge, {
+  getAssignmentProgress,
+} from './AssignmentProgress'
 import AssignmentSubmissionForm, {
   type StudentSubmission,
 } from './AssignmentSubmissionForm'
@@ -258,7 +261,11 @@ useEffect(() => {
 
             const pastDeadline =
   new Date(assignment.due_at).getTime() <= now
-
+const studentStatus = getAssignmentProgress(
+  assignment.due_at,
+  submission,
+  now,
+)
             return (
               <article
                 key={assignment.id}
@@ -278,6 +285,9 @@ useEffect(() => {
                       ? 'Past deadline'
                       : 'Upcoming'}
                   </span>
+                  {isStudent && (
+  <AssignmentProgressBadge status={studentStatus} />
+)}
                 </div>
 
                 {assignment.description && (

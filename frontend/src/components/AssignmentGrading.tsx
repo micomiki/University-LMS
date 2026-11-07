@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react'
-
+import AssignmentProgressBadge from './AssignmentProgress'
 type Submission = {
   id: number
   assignment_id: number
@@ -330,17 +330,13 @@ export default function AssignmentGrading({
                 </p>
               </div>
 
-              <span
-                className={
-                  submission.score !== null
-                    ? 'assignment-status open'
-                    : 'assignment-status overdue'
-                }
-              >
-                {submission.score !== null
-                  ? 'Graded'
-                  : 'Pending Review'}
-              </span>
+              <AssignmentProgressBadge
+  status={
+    submission.score !== null
+      ? 'graded'
+      : 'under-review'
+  }
+/>
             </div>
 
             {/* Student's submitted response */}
