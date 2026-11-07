@@ -1,0 +1,42 @@
+.final-submission-summary {
+  border: 1px solid #dbe2ea;
+  border-radius: 12px;
+  padding: 18px;
+  margin: 18px 0;
+  background: #fff;
+}
+
+.final-submission-summary-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.final-submission-summary-heading h4 { margin: 0; }
+
+.final-submission-locked {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.final-submission-response p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.final-submission-grade {
+  margin: 16px 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.final-submission-grade p { margin: 8px 0; }
+.final-submission-grade small { color: #64748b; }

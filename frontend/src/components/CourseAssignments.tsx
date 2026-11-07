@@ -4,6 +4,8 @@ import AssignmentGrading from './AssignmentGrading'
 import AssignmentAttemptReviewPanel from './AssignmentAttemptReviewPanel'
 import CreateAssignmentForm from './CreateAssignmentForm'
 import EditAssignmentForm from './EditAssignmentForm'
+import AddNewSubmissionForm from './AddNewSubmissionForm'
+import FinalSubmissionSummary from './FinalSubmissionSummary'
 import AssignmentSubmissionForm, {
   type StudentSubmission,
 } from './AssignmentSubmissionForm'
@@ -17,6 +19,7 @@ type Assignment = {
   due_at: string
   max_score: number | string
   created_at: string
+  allow_multiple_submissions: boolean
 }
 
 type Props = {
@@ -49,6 +52,7 @@ export default function CourseAssignments({
   const [error, setError] = useState('')
   const [editingAssignmentId, setEditingAssignmentId] =
   useState<number | null>(null)
+  const [now, setNow] = useState(() => Date.now())
   const isStudent = role.toLowerCase() === 'student'
   const canGrade =
   role.toLowerCase() === 'professor' ||
@@ -210,7 +214,13 @@ async function deleteAssignment(assignment: Assignment) {
   }
 }
 
+useEffect(() => {
+  const timer = window.setInterval(() => {
+    setNow(Date.now())
+  }, 15000)
 
+  return () => window.clearInterval(timer)
+}, [])
   return (
     <section className="panel">
       <h2>Course Assignments</h2>
@@ -247,8 +257,7 @@ async function deleteAssignment(assignment: Assignment) {
             ) ?? null
 
             const pastDeadline =
-              new Date(assignment.due_at).getTime() <
-              Date.now()
+  new Date(assignment.due_at).getTime() <= now
 
             return (
               <article
@@ -354,45 +363,77 @@ async function deleteAssignment(assignment: Assignment) {
 
                 
 
-                {/* Student submission and attempt history */}
-                {isStudent && (
-                  <>
-                    <AssignmentSubmissionForm
-                      key={assignment.id}
-                      assignmentId={assignment.id}
-                      token={token}
-                      existing={submission}
-                      onSubmitted={refreshSubmissions}
-                    />
+          
 
-                    <AssignmentAttemptReviewPanel
-                      assignmentId={assignment.id}
-                      token={token}
-                      mode="student"
-                    />
-                  </>
-                )}
+{/* Student submission, final result and attempt history */}
+{isStudent && (
+  <>
+    {!pastDeadline ? (
+      <>
+        <AssignmentSubmissionForm
+          key={assignment.id}
+          assignmentId={assignment.id}
+          token={token}
+          existing={submission}
+          onSubmitted={refreshSubmissions}
+        />
 
-                {/* Professor grading and attempt feedback */}
-                {canGrade && (
-                  <>
-                    <AssignmentGrading
-                      assignmentId={assignment.id}
-                      maxScore={assignment.max_score}
-                      token={token}
-                    />
+        {assignment.allow_multiple_submissions && submission && (
+          <AddNewSubmissionForm
+            assignmentId={assignment.id}
+            token={token}
+            onSubmitted={refreshSubmissions}
+          />
+        )}
+      </>
+    ) : submission ? (
+      <FinalSubmissionSummary
+        submissionId={submission.id}
+        token={token}
+        maxScore={assignment.max_score}
+      />
+    ) : (
+      <p role="status">
+        No submission was received before the deadline.
+      </p>
+    )}
 
-                    <AssignmentAttemptReviewPanel
-                      assignmentId={assignment.id}
-                      token={token}
-                      mode={
-                        role.toLowerCase() === 'admin'
-                          ? 'admin'
-                          : 'professor'
-                      }
-                    />
-                  </>
-                )}
+    <AssignmentAttemptReviewPanel
+      assignmentId={assignment.id}
+      token={token}
+      mode="student"
+    />
+  </>
+)}
+
+{/* Professor final grading and attempt feedback */}
+{canGrade && (
+  <>
+    {pastDeadline ? (
+      <AssignmentGrading
+        assignmentId={assignment.id}
+        maxScore={assignment.max_score}
+        token={token}
+      />
+    ) : (
+      <p role="status">
+        Final grading opens after the assignment deadline.
+        You can review and comment on attempts now.
+      </p>
+    )}
+
+    <AssignmentAttemptReviewPanel
+      assignmentId={assignment.id}
+      token={token}
+      mode={
+        role.toLowerCase() === 'admin'
+          ? 'admin'
+          : 'professor'
+      }
+    />
+  </>
+)}
+
               </article>
             )
           })}

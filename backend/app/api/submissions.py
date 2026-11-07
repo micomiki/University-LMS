@@ -1,3 +1,18 @@
+"""Phase 11.8C: distinct Edit Current (PUT) and Add New (POST) behavior.
+
+Prerequisites: Assignment.allow_multiple_submissions, SubmissionAttempt and
+its table, and existing grading schema already in place.
+
+- POST creates Attempt 1 (either policy), or a NEW attempt (multiple only).
+- PUT edits the CURRENT attempt in place (both policies).
+- Attempt IDs and previous-attempt files/feedback are preserved on PUT.
+- Student submission/edit is blocked at the deadline; grading opens after it.
+
+Withdrawal is no longer part of the proposed UI. A pre-existing withdrawn
+submission can be reactivated by POST before the deadline if the earlier
+withdrawal migration was already installed.
+"""
+
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -225,7 +240,10 @@ async def submit_assignment(
         .with_for_update()
         .first()
     )
-    if existing is not None and not assignment.allow_multiple_submissions:
+    # Handle legacy withdrawn records only if the optional field already exists.
+    # Current UI does not expose withdrawal.
+    was_withdrawn = bool(getattr(existing, "is_withdrawn", False)) if existing is not None else False
+    if existing is not None and not assignment.allow_multiple_submissions and not was_withdrawn:
         raise HTTPException(
             status_code=409,
             detail="Single submission policy: use Edit Submission to update your work.",
@@ -259,6 +277,8 @@ async def submit_assignment(
             existing.stored_filename = stored_filename
             existing.submitted_at = now
             existing.updated_at = now
+            if was_withdrawn:
+                existing.is_withdrawn = False
             clear_previous_grade(existing)
             make_new_attempt(
                 db,
@@ -267,6 +287,8 @@ async def submit_assignment(
             )
             submission = existing
 
+        # Do not accept a late upload that crossed the deadline while writing.
+        require_open_deadline(assignment)
         # Database commit is atomic for current submission + attempt history.
         db.commit()
         db.refresh(submission)
@@ -309,8 +331,16 @@ async def update_submission(
     check_student_enrollment(assignment, current_user, db)
     require_open_deadline(assignment)
 
+    if bool(getattr(submission, "is_withdrawn", False)):
+        raise HTTPException(
+            status_code=409,
+            detail="This submission was previously withdrawn. Submit again before the deadline.",
+        )
+
     if text_response is None and file is None:
         raise HTTPException(status_code=400, detail="No changes were provided")
+    if file is None and text_response is not None and text_response == (submission.text_response or ""):
+        raise HTTPException(status_code=400, detail="No changes detected")
 
     next_text = text_response if text_response is not None else submission.text_response
     if not (next_text and next_text.strip()) and file is None and not submission.stored_filename:
@@ -334,25 +364,17 @@ async def update_submission(
         submission.updated_at = now
         clear_previous_grade(submission)
 
-        if assignment.allow_multiple_submissions:
-            # Every revision is a new attempt, preserving all prior feedback.
-            submission.submitted_at = now
-            make_new_attempt(
-                db,
-                submission,
-                attempt_number=current_attempt.attempt_number + 1,
-            )
-        else:
-            # Single policy: update the one active attempt in place.
-            current_attempt.text_response = submission.text_response
-            current_attempt.original_filename = submission.original_filename
-            current_attempt.stored_filename = submission.stored_filename
-            current_attempt.submitted_at = now
-            # A review of the older version no longer describes the edited work.
-            current_attempt.feedback = None
-            current_attempt.reviewed_by = None
-            current_attempt.reviewed_at = None
+        # Editing updates the latest attempt IN PLACE for both policies.
+        # Earlier attempts and their filenames are not modified.
+        # Preserve existing professor feedback; a previously reviewed edit
+        # may require re-review. Submission.updated_at tracks the revision.
+        current_attempt.text_response = submission.text_response
+        current_attempt.original_filename = submission.original_filename
+        current_attempt.stored_filename = submission.stored_filename
+        # Keep original attempt.submitted_at and attempt_number unchanged.
 
+        # Do not accept a late upload that crossed the deadline while writing.
+        require_open_deadline(assignment)
         db.commit()
         db.refresh(submission)
         return submission
