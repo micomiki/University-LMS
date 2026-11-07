@@ -200,6 +200,7 @@ export default function TrackedClassroom({
         roomName={roomName}
         userInfo={{
           displayName,
+          email: '',
         }}
         configOverwrite={{
           startWithAudioMuted: true,
