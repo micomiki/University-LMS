@@ -8,6 +8,7 @@ from app.models.meeting import Meeting
 from app.models.attendance import Attendance
 from app.models.attendance_session import AttendanceSession
 from app.models.submission_attempt import SubmissionAttempt
+from app.models.notification import Notification
 __all__ = [
     "User",
     "UserRole",

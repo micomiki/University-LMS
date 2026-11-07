@@ -8,6 +8,7 @@ import AutomaticAttendanceReport from './components/AutomaticAttendanceReport'
 import RoleDashboard from './components/RoleDashboard'
 import CourseMaterials from './components/CourseMaterials'
 import CourseAssignments from './components/CourseAssignments'
+import NotificationCenter from './components/NotificationCenter'
 import Sidebar, {
   type DashboardPage,
 } from './components/Sidebar'
@@ -375,9 +376,18 @@ async function openAssignmentFromDashboard(courseId: number) {
             <p>Learning Management Dashboard</p>
           </div>
 
-          <button onClick={logout}>
-            Logout
-          </button>
+          <div className="lms-topbar-actions">
+  <NotificationCenter
+    token={token}
+    onOpenAssignment={(courseId) => {
+      setPage('courses')
+      void selectCourse(courseId).then(() => {
+        setCourseSection('assignments')
+      })
+    }}
+  />
+  <button onClick={logout}>Logout</button>
+</div>
         </div>
 
         {error && (

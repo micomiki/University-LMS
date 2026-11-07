@@ -1,17 +1,3 @@
-"""Phase 11.8C: distinct Edit Current (PUT) and Add New (POST) behavior.
-
-Prerequisites: Assignment.allow_multiple_submissions, SubmissionAttempt and
-its table, and existing grading schema already in place.
-
-- POST creates Attempt 1 (either policy), or a NEW attempt (multiple only).
-- PUT edits the CURRENT attempt in place (both policies).
-- Attempt IDs and previous-attempt files/feedback are preserved on PUT.
-- Student submission/edit is blocked at the deadline; grading opens after it.
-
-Withdrawal is no longer part of the proposed UI. A pre-existing withdrawn
-submission can be reactivated by POST before the deadline if the earlier
-withdrawal migration was already installed.
-"""
 
 import uuid
 from datetime import datetime, timezone
@@ -40,6 +26,7 @@ from app.models.submission_attempt import SubmissionAttempt
 from app.models.user import User, UserRole
 from app.schemas.grading import GradeSubmission
 from app.schemas.submission import SubmissionRead
+from app.services.notification_events import queue_final_grade_notification
 
 router = APIRouter(prefix="/api/submissions", tags=["Submissions"])
 
@@ -477,12 +464,27 @@ def grade_submission(
             detail=f"Score must be between 0 and {assignment.max_score}",
         )
 
+    
+
     # Submission always mirrors the latest attempt. Older attempts have
     # professor comments but never final grades.
+    grade_changed = (
+        submission.score is None
+        or submission.score != data.score
+        or (submission.feedback or "") != (data.feedback or "")
+    )
+
     submission.score = data.score
     submission.feedback = data.feedback
     submission.graded_by = current_user.id
     submission.graded_at = datetime.now(timezone.utc)
+    if grade_changed:
+        queue_final_grade_notification(
+            db,
+            submission=submission,
+            assignment=assignment,
+            actor_id=current_user.id,
+        )
     db.commit()
     db.refresh(submission)
     return submission

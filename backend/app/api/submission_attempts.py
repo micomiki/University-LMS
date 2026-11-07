@@ -1,4 +1,4 @@
-
+from app.services.notification_events import queue_attempt_feedback_notification
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi.responses import FileResponse
@@ -143,20 +143,32 @@ def update_attempt_feedback(
         require_professor=True,
     )
 
-    attempt.feedback = data.feedback.strip()
-
-    if not attempt.feedback:
+    new_feedback = data.feedback.strip()
+    if not new_feedback:
         raise HTTPException(
             status_code=422,
             detail="Feedback cannot be empty.",
         )
+    old_feedback = (attempt.feedback or "").strip()
 
+    attempt.feedback = new_feedback
     attempt.reviewed_by = current_user.id
     attempt.reviewed_at = datetime.now(timezone.utc)
 
+    if new_feedback != old_feedback:
+        assignment = db.get(Assignment, submission.assignment_id)
+        if assignment is None:
+            raise HTTPException(status_code=404, detail="Assignment not found.")
+        queue_attempt_feedback_notification(
+            db,
+            submission=submission,
+            assignment=assignment,
+            attempt=attempt,
+            actor_id=current_user.id,
+        )
+
     db.commit()
     db.refresh(attempt)
-
     return attempt
 @router.get("/{attempt_id}/download")
 def download_attempt_file(
