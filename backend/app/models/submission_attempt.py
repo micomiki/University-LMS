@@ -52,4 +52,18 @@ class SubmissionAttempt(Base):
         nullable=False,
         server_default=func.now(),
     )
+        # Professor's feedback for this specific attempt
+    feedback = Column(Text, nullable=True)
 
+    # Professor or administrator who reviewed the attempt
+    reviewed_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    # Date and time of the review
+    reviewed_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+    )

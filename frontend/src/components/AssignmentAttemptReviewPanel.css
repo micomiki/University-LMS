@@ -1,0 +1,59 @@
+.attempt-review-panel { margin: 18px 0; }
+.attempt-review-panel .attempt-review-toggle {
+  background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+  border-radius: 9px; padding: 10px 14px; font-weight: 600; cursor: pointer;
+}
+.attempt-review-panel .attempt-review-toggle:hover { background: #dbeafe; }
+.attempt-review-body {
+  margin-top: 12px; padding: 18px; border: 1px solid #e2e8f0;
+  background: #fff; border-radius: 12px;
+}
+.attempt-review-body h4 { margin: 0 0 14px; color: #0f172a; }
+.attempt-review-student-selector {
+  display: flex; flex-direction: column; gap: 7px; max-width: 440px;
+  margin: 0 0 16px; font-weight: 600; color: #334155;
+}
+.attempt-review-panel select, .attempt-review-panel textarea {
+  width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1;
+  border-radius: 8px; padding: 10px; background: #fff; color: #0f172a;
+  font: inherit;
+}
+.attempt-review-panel textarea { resize: vertical; min-height: 90px; }
+.attempt-review-list { display: grid; gap: 14px; }
+.attempt-review-card {
+  padding: 16px; border: 1px solid #e2e8f0;
+  border-radius: 10px; background: #f8fafc;
+}
+.attempt-review-heading { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.attempt-review-heading strong { color: #0f172a; }
+.attempt-review-latest {
+  font-size: 12px; background: #dbeafe; color: #1d4ed8;
+  border-radius: 999px; padding: 3px 9px; font-weight: 600;
+}
+.attempt-review-date { color: #64748b; font-size: 12px; }
+.attempt-review-response { margin: 12px 0; color: #334155; }
+.attempt-review-response p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
+.attempt-review-caption { font-size: 12px; font-weight: 700; color: #64748b; }
+.attempt-review-download {
+  max-width: 100%; overflow-wrap: anywhere; background: transparent;
+  border: none; color: #1d4ed8; padding: 6px 0; text-decoration: underline;
+  cursor: pointer; text-align: left;
+}
+.attempt-review-feedback {
+  margin-top: 15px; padding-top: 13px; border-top: 1px solid #e2e8f0;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.attempt-review-feedback label, .attempt-review-feedback strong { font-weight: 700; color: #334155; }
+.attempt-review-feedback .attempt-review-save {
+  align-self: flex-start; background: #2563eb; border: none;
+  border-radius: 8px; color: #fff; padding: 9px 14px;
+  cursor: pointer; font-weight: 600;
+}
+.attempt-review-panel button:disabled { opacity: .6; cursor: not-allowed; }
+.attempt-review-readonly p { margin: 2px 0; color: #475569; white-space: pre-wrap; }
+.attempt-review-muted { color: #64748b; }
+.attempt-review-error { color: #b91c1c; }
+.attempt-review-success { color: #166534; }
+@media(max-width:600px) {
+  .attempt-review-body, .attempt-review-card { padding: 12px; }
+}

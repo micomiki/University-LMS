@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react'
 import AssignmentGrading from './AssignmentGrading'
+import AssignmentAttemptReviewPanel from './AssignmentAttemptReviewPanel'
 import CreateAssignmentForm from './CreateAssignmentForm'
 import EditAssignmentForm from './EditAssignmentForm'
 import AssignmentSubmissionForm, {
@@ -351,24 +352,47 @@ async function deleteAssignment(assignment: Assignment) {
 
 
 
+                
+
+                {/* Student submission and attempt history */}
                 {isStudent && (
-                  <AssignmentSubmissionForm
-                    key={assignment.id}
-                    assignmentId={assignment.id}
-                    token={token}
-                    existing={submission}
-                    onSubmitted={refreshSubmissions}
-                  />
+                  <>
+                    <AssignmentSubmissionForm
+                      key={assignment.id}
+                      assignmentId={assignment.id}
+                      token={token}
+                      existing={submission}
+                      onSubmitted={refreshSubmissions}
+                    />
+
+                    <AssignmentAttemptReviewPanel
+                      assignmentId={assignment.id}
+                      token={token}
+                      mode="student"
+                    />
+                  </>
                 )}
 
-                {/* Professor grading section */}
-{canGrade && (
-  <AssignmentGrading
-    assignmentId={assignment.id}
-    maxScore={assignment.max_score}
-    token={token}
-  />
-)}
+                {/* Professor grading and attempt feedback */}
+                {canGrade && (
+                  <>
+                    <AssignmentGrading
+                      assignmentId={assignment.id}
+                      maxScore={assignment.max_score}
+                      token={token}
+                    />
+
+                    <AssignmentAttemptReviewPanel
+                      assignmentId={assignment.id}
+                      token={token}
+                      mode={
+                        role.toLowerCase() === 'admin'
+                          ? 'admin'
+                          : 'professor'
+                      }
+                    />
+                  </>
+                )}
               </article>
             )
           })}

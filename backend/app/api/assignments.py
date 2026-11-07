@@ -66,6 +66,7 @@ def create_assignment(
         **data.model_dump(),
         course_id=course.id,
         created_by=current_user.id,
+        
     )
 
     db.add(assignment)

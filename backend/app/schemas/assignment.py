@@ -10,8 +10,9 @@ class AssignmentCreate(BaseModel):
     description: str | None = None
     instructions: str | None = None
     due_at: datetime
+    
     max_score: Decimal = Field(gt=0, le=999999.99)
-
+    allow_multiple_submissions: bool = False
 
 class AssignmentUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=200)
@@ -19,7 +20,7 @@ class AssignmentUpdate(BaseModel):
     instructions: str | None = None
     due_at: datetime | None = None
     max_score: Decimal | None = Field(default=None, gt=0, le=999999.99)
-
+    allow_multiple_submissions: bool | None = None
 
 class AssignmentRead(BaseModel):
     id: int
@@ -31,6 +32,6 @@ class AssignmentRead(BaseModel):
     course_id: int
     created_by: int
     created_at: datetime
-
+    allow_multiple_submissions: bool
     model_config = ConfigDict(from_attributes=True)
 

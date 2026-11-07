@@ -10,6 +10,7 @@ from app.api.submissions import router as submissions_router
 from app.api.meetings import router as meetings_router
 from app.api.attendance import router as attendance_router
 from app.api.attendance_tracking import router as attendance_tracking_router
+from app.api.submission_attempts import router as submission_attempts_router
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -27,6 +28,7 @@ app.include_router(submissions_router)
 app.include_router(meetings_router)
 app.include_router(attendance_router)
 app.include_router(attendance_tracking_router)
+app.include_router(submission_attempts_router)
 
 @app.get("/")
 def home():

@@ -1,37 +1,41 @@
-
-import os
 import uuid
 from datetime import datetime, timezone
-from decimal import Decimal
-from fastapi.responses import FileResponse
-from app.schemas.grading import GradeSubmission
 from pathlib import Path
 
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
-    UploadFile,
     File,
     Form,
+    HTTPException,
+    UploadFile,
     status,
 )
+from fastapi.responses import FileResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_user, require_roles
 from app.db.session import get_db
 from app.models.assignment import Assignment
-from app.models.submission import Submission
-from app.models.enrollment import Enrollment
-from app.models.user import User, UserRole
 from app.models.course import Course
+from app.models.enrollment import Enrollment
+from app.models.submission import Submission
+from app.models.submission_attempt import SubmissionAttempt
+from app.models.user import User, UserRole
+from app.schemas.grading import GradeSubmission
 from app.schemas.submission import SubmissionRead
-from app.api.dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/api/submissions", tags=["Submissions"])
 
-UPLOAD_DIR = Path("uploads/assignment_submissions")
+# An absolute path matches the existing download endpoint even when the
+# application is started from a different working directory.
+UPLOAD_DIR = (
+    Path(__file__).resolve().parents[2]
+    / "uploads"
+    / "assignment_submissions"
+)
 MAX_FILE_SIZE = 20 * 1024 * 1024
-
 ALLOWED_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".ppt", ".pptx",
     ".txt", ".csv", ".xls", ".xlsx",
@@ -39,14 +43,10 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-def get_assignment_or_404(assignment_id: int, db: Session):
-    assignment = db.query(Assignment).filter(
-        Assignment.id == assignment_id
-    ).first()
-
+def get_assignment_or_404(assignment_id: int, db: Session) -> Assignment:
+    assignment = db.get(Assignment, assignment_id)
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
-
     return assignment
 
 
@@ -54,12 +54,11 @@ def check_student_enrollment(
     assignment: Assignment,
     student: User,
     db: Session,
-):
+) -> None:
     enrollment = db.query(Enrollment).filter(
         Enrollment.course_id == assignment.course_id,
         Enrollment.student_id == student.id,
     ).first()
-
     if not enrollment:
         raise HTTPException(
             status_code=403,
@@ -71,23 +70,127 @@ def check_professor_access(
     assignment: Assignment,
     professor: User,
     db: Session,
-):
-    course = db.query(Course).filter(
-        Course.id == assignment.course_id
-    ).first()
-
+) -> None:
+    course = db.get(Course, assignment.course_id)
     if not course or course.professor_id != professor.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
 
-def validate_file(file: UploadFile):
-    extension = Path(file.filename or "").suffix.lower()
+def deadline_as_utc(assignment: Assignment) -> datetime:
+    """Treat legacy naive due_at values as UTC (frontend sends UTC ISO dates)."""
+    deadline = assignment.due_at
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+    return deadline.astimezone(timezone.utc)
 
-    if extension not in ALLOWED_EXTENSIONS:
+
+def require_open_deadline(assignment: Assignment) -> None:
+    if datetime.now(timezone.utc) >= deadline_as_utc(assignment):
         raise HTTPException(
-            status_code=400,
-            detail="File type is not allowed",
+            status_code=409,
+            detail="The assignment deadline has passed. Changes are no longer allowed.",
         )
+
+
+def require_closed_deadline(assignment: Assignment) -> None:
+    if datetime.now(timezone.utc) < deadline_as_utc(assignment):
+        raise HTTPException(
+            status_code=409,
+            detail="Final grades can be assigned only after the deadline.",
+        )
+
+
+def validate_file(file: UploadFile) -> None:
+    extension = Path(file.filename or "").suffix.lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File type is not allowed")
+
+
+async def save_uploaded_file(
+    file: UploadFile,
+) -> tuple[str, str, Path]:
+    """Save a file; remove partial uploads if validation or writing fails."""
+    validate_file(file)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    extension = Path(file.filename or "").suffix.lower()
+    stored_filename = f"{uuid.uuid4().hex}{extension}"
+    original_filename = Path(
+        (file.filename or "submission").replace("\\", "/")
+    ).name[:255]
+    saved_path = UPLOAD_DIR / stored_filename
+
+    total = 0
+    try:
+        with saved_path.open("wb") as output:
+            while chunk := await file.read(1024 * 1024):
+                total += len(chunk)
+                if total > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="File exceeds the 20 MB limit",
+                    )
+                output.write(chunk)
+    except Exception:
+        saved_path.unlink(missing_ok=True)
+        raise
+    finally:
+        await file.close()
+
+    return original_filename, stored_filename, saved_path
+
+
+def latest_attempt(db: Session, submission_id: int) -> SubmissionAttempt | None:
+    return (
+        db.query(SubmissionAttempt)
+        .filter(SubmissionAttempt.submission_id == submission_id)
+        .order_by(SubmissionAttempt.attempt_number.desc())
+        .first()
+    )
+
+
+def ensure_initial_attempt(db: Session, submission: Submission) -> SubmissionAttempt:
+    """Support old submissions that predate the submission_attempts table."""
+    attempt = latest_attempt(db, submission.id)
+    if attempt is not None:
+        return attempt
+
+    attempt = SubmissionAttempt(
+        submission_id=submission.id,
+        attempt_number=1,
+        text_response=submission.text_response,
+        original_filename=submission.original_filename,
+        stored_filename=submission.stored_filename,
+        submitted_at=submission.submitted_at,
+    )
+    db.add(attempt)
+    db.flush()
+    return attempt
+
+
+def clear_previous_grade(submission: Submission) -> None:
+    # A final grade is valid only for the version reviewed after the deadline.
+    submission.score = None
+    submission.feedback = None
+    submission.graded_by = None
+    submission.graded_at = None
+
+
+def make_new_attempt(
+    db: Session,
+    submission: Submission,
+    attempt_number: int,
+) -> None:
+    db.add(
+        SubmissionAttempt(
+            submission_id=submission.id,
+            attempt_number=attempt_number,
+            text_response=submission.text_response,
+            original_filename=submission.original_filename,
+            stored_filename=submission.stored_filename,
+            submitted_at=datetime.now(timezone.utc),
+        )
+    )
 
 
 @router.post(
@@ -103,81 +206,84 @@ async def submit_assignment(
     current_user: User = Depends(require_roles(UserRole.STUDENT)),
 ):
     assignment = get_assignment_or_404(assignment_id, db)
-
     check_student_enrollment(assignment, current_user, db)
+    require_open_deadline(assignment)
 
-    existing = db.query(Submission).filter(
-        Submission.assignment_id == assignment_id,
-        Submission.student_id == current_user.id,
-    ).first()
-
-    if existing:
-        raise HTTPException(
-            status_code=409,
-            detail="You have already submitted this assignment. Use the update endpoint.",
-        )
-
-    if not text_response and not file:
+    if not (text_response and text_response.strip()) and file is None:
         raise HTTPException(
             status_code=400,
             detail="Provide a text response or upload a file",
         )
 
-    stored_filename = None
-    original_filename = None
-    saved_path = None
-
-    if file:
-        validate_file(file)
-
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-        extension = Path(file.filename or "").suffix.lower()
-        stored_filename = f"{uuid.uuid4().hex}{extension}"
-        original_filename = os.path.basename(file.filename or "submission")
-        saved_path = UPLOAD_DIR / stored_filename
-
-        size = 0
-
-        try:
-            with saved_path.open("wb") as output:
-                while chunk := await file.read(1024 * 1024):
-                    size += len(chunk)
-
-                    if size > MAX_FILE_SIZE:
-                        raise HTTPException(
-                            status_code=413,
-                            detail="File exceeds the 20 MB limit",
-                        )
-
-                    output.write(chunk)
-
-        except Exception:
-            if saved_path.exists():
-                saved_path.unlink()
-            raise
-        finally:
-            await file.close()
-
-    submission = Submission(
-        assignment_id=assignment_id,
-        student_id=current_user.id,
-        text_response=text_response,
-        original_filename=original_filename,
-        stored_filename=stored_filename,
+    # Row lock serializes concurrent attempts for an existing submission.
+    existing = (
+        db.query(Submission)
+        .filter(
+            Submission.assignment_id == assignment_id,
+            Submission.student_id == current_user.id,
+        )
+        .with_for_update()
+        .first()
     )
+    if existing is not None and not assignment.allow_multiple_submissions:
+        raise HTTPException(
+            status_code=409,
+            detail="Single submission policy: use Edit Submission to update your work.",
+        )
+
+    saved_path: Path | None = None
+    original_filename = None
+    stored_filename = None
+
+    if file is not None:
+        original_filename, stored_filename, saved_path = await save_uploaded_file(file)
 
     try:
-        db.add(submission)
+        now = datetime.now(timezone.utc)
+        if existing is None:
+            submission = Submission(
+                assignment_id=assignment_id,
+                student_id=current_user.id,
+                text_response=text_response,
+                original_filename=original_filename,
+                stored_filename=stored_filename,
+            )
+            db.add(submission)
+            db.flush()  # Get the ID before inserting Attempt 1.
+            make_new_attempt(db, submission, attempt_number=1)
+        else:
+            # Backfill before modifying a legacy submission's current values.
+            previous = ensure_initial_attempt(db, existing)
+            existing.text_response = text_response
+            existing.original_filename = original_filename
+            existing.stored_filename = stored_filename
+            existing.submitted_at = now
+            existing.updated_at = now
+            clear_previous_grade(existing)
+            make_new_attempt(
+                db,
+                existing,
+                attempt_number=previous.attempt_number + 1,
+            )
+            submission = existing
+
+        # Database commit is atomic for current submission + attempt history.
         db.commit()
         db.refresh(submission)
+        return submission
+    except IntegrityError:
+        db.rollback()
+        if saved_path is not None:
+            saved_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=409,
+            detail="A conflicting submission was saved. Reload and try again.",
+        )
     except Exception:
         db.rollback()
-        if saved_path and saved_path.exists():
-            saved_path.unlink()
+        if saved_path is not None:
+            saved_path.unlink(missing_ok=True)
         raise
-
-    return submission
 
 
 @router.put("/{submission_id}", response_model=SubmissionRead)
@@ -188,78 +294,81 @@ async def update_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.STUDENT)),
 ):
-    submission = db.query(Submission).filter(
-        Submission.id == submission_id
-    ).first()
-
-    if not submission:
+    submission = (
+        db.query(Submission)
+        .filter(Submission.id == submission_id)
+        .with_for_update()
+        .first()
+    )
+    if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
-
     if submission.student_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     assignment = get_assignment_or_404(submission.assignment_id, db)
+    check_student_enrollment(assignment, current_user, db)
+    require_open_deadline(assignment)
 
-    if file:
-        validate_file(file)
+    if text_response is None and file is None:
+        raise HTTPException(status_code=400, detail="No changes were provided")
 
-    if text_response is not None:
-        submission.text_response = text_response
-
-    new_path = None
-    old_path = (
-        UPLOAD_DIR / submission.stored_filename
-        if submission.stored_filename
-        else None
-    )
-
-    if file:
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-        extension = Path(file.filename or "").suffix.lower()
-        new_filename = f"{uuid.uuid4().hex}{extension}"
-        new_path = UPLOAD_DIR / new_filename
-
-        size = 0
-
-        try:
-            with new_path.open("wb") as output:
-                while chunk := await file.read(1024 * 1024):
-                    size += len(chunk)
-
-                    if size > MAX_FILE_SIZE:
-                        raise HTTPException(
-                            status_code=413,
-                            detail="File exceeds the 20 MB limit",
-                        )
-
-                    output.write(chunk)
-
-        except Exception:
-            if new_path.exists():
-                new_path.unlink()
-            raise
-        finally:
-            await file.close()
-
-        submission.stored_filename = new_filename
-        submission.original_filename = os.path.basename(
-            file.filename or "submission"
+    next_text = text_response if text_response is not None else submission.text_response
+    if not (next_text and next_text.strip()) and file is None and not submission.stored_filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide a text response or keep an attached file",
         )
 
+    # The first edit to an old submission creates a snapshot of the old data.
+    current_attempt = ensure_initial_attempt(db, submission)
+
+    saved_path: Path | None = None
     try:
+        if file is not None:
+            original_filename, stored_filename, saved_path = await save_uploaded_file(file)
+            submission.original_filename = original_filename
+            submission.stored_filename = stored_filename
+
+        submission.text_response = next_text
+        now = datetime.now(timezone.utc)
+        submission.updated_at = now
+        clear_previous_grade(submission)
+
+        if assignment.allow_multiple_submissions:
+            # Every revision is a new attempt, preserving all prior feedback.
+            submission.submitted_at = now
+            make_new_attempt(
+                db,
+                submission,
+                attempt_number=current_attempt.attempt_number + 1,
+            )
+        else:
+            # Single policy: update the one active attempt in place.
+            current_attempt.text_response = submission.text_response
+            current_attempt.original_filename = submission.original_filename
+            current_attempt.stored_filename = submission.stored_filename
+            current_attempt.submitted_at = now
+            # A review of the older version no longer describes the edited work.
+            current_attempt.feedback = None
+            current_attempt.reviewed_by = None
+            current_attempt.reviewed_at = None
+
         db.commit()
         db.refresh(submission)
+        return submission
+    except IntegrityError:
+        db.rollback()
+        if saved_path is not None:
+            saved_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=409,
+            detail="A conflicting update was saved. Reload and try again.",
+        )
     except Exception:
         db.rollback()
-        if new_path and new_path.exists():
-            new_path.unlink()
+        if saved_path is not None:
+            saved_path.unlink(missing_ok=True)
         raise
-
-    if new_path and old_path and old_path.exists():
-        old_path.unlink()
-
-    return submission
 
 
 @router.get("/my-submissions", response_model=list[SubmissionRead])
@@ -275,10 +384,7 @@ def get_my_submissions(
     )
 
 
-@router.get(
-    "/assignments/{assignment_id}",
-    response_model=list[SubmissionRead],
-)
+@router.get("/assignments/{assignment_id}", response_model=list[SubmissionRead])
 def get_assignment_submissions(
     assignment_id: int,
     db: Session = Depends(get_db),
@@ -287,10 +393,8 @@ def get_assignment_submissions(
     ),
 ):
     assignment = get_assignment_or_404(assignment_id, db)
-
     if current_user.role == UserRole.PROFESSOR:
         check_professor_access(assignment, current_user, db)
-
     return (
         db.query(Submission)
         .filter(Submission.assignment_id == assignment_id)
@@ -305,22 +409,19 @@ def get_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    submission = db.query(Submission).filter(
-        Submission.id == submission_id
-    ).first()
-
-    if not submission:
+    submission = db.get(Submission, submission_id)
+    if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
-
     if current_user.role == UserRole.STUDENT:
         if submission.student_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
-
     elif current_user.role == UserRole.PROFESSOR:
         assignment = get_assignment_or_404(submission.assignment_id, db)
         check_professor_access(assignment, current_user, db)
-
+    elif current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Access denied")
     return submission
+
 
 @router.put("/{submission_id}/grade", response_model=SubmissionRead)
 def grade_submission(
@@ -331,45 +432,39 @@ def grade_submission(
         require_roles(UserRole.PROFESSOR, UserRole.ADMIN)
     ),
 ):
-    submission = db.query(Submission).filter(
-        Submission.id == submission_id
-    ).first()
-
-    if not submission:
-        raise HTTPException(
-            status_code=404,
-            detail="Submission not found",
-        )
-
-    assignment = get_assignment_or_404(
-        submission.assignment_id,
-        db,
+    submission = (
+        db.query(Submission)
+        .filter(Submission.id == submission_id)
+        .with_for_update()
+        .first()
     )
+    if submission is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
 
-    # Professors can grade only assignments in their own courses.
+    assignment = get_assignment_or_404(submission.assignment_id, db)
     if current_user.role == UserRole.PROFESSOR:
-        check_professor_access(
-            assignment,
-            current_user,
-            db,
-        )
+        check_professor_access(assignment, current_user, db)
+    require_closed_deadline(assignment)
 
-    # Validate the score against the assignment's maximum score.
-    if data.score > assignment.max_score:
+    # Ensure a legacy submission has a recorded final attempt before grading.
+    ensure_initial_attempt(db, submission)
+
+    if data.score < 0 or data.score > assignment.max_score:
         raise HTTPException(
             status_code=400,
-            detail=f"Score cannot exceed {assignment.max_score}",
+            detail=f"Score must be between 0 and {assignment.max_score}",
         )
 
+    # Submission always mirrors the latest attempt. Older attempts have
+    # professor comments but never final grades.
     submission.score = data.score
     submission.feedback = data.feedback
     submission.graded_by = current_user.id
     submission.graded_at = datetime.now(timezone.utc)
-
     db.commit()
     db.refresh(submission)
-
     return submission
+
 
 @router.get("/{submission_id}/download")
 def download_submission_file(
@@ -378,42 +473,17 @@ def download_submission_file(
     current_user: User = Depends(get_current_user),
 ):
     submission = db.get(Submission, submission_id)
+    if submission is None:
+        raise HTTPException(status_code=404, detail="Submission not found.")
 
-    if not submission:
-        raise HTTPException(
-            status_code=404,
-            detail="Submission not found.",
-        )
-
-    assignment = db.get(Assignment, submission.assignment_id)
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found.",
-        )
-
+    assignment = get_assignment_or_404(submission.assignment_id, db)
     if current_user.role == UserRole.STUDENT:
         if submission.student_id != current_user.id:
-            raise HTTPException(
-                status_code=403,
-                detail="Access denied.",
-            )
-
+            raise HTTPException(status_code=403, detail="Access denied.")
     elif current_user.role == UserRole.PROFESSOR:
-        course = db.get(Course, assignment.course_id)
-
-        if not course or course.professor_id != current_user.id:
-            raise HTTPException(
-                status_code=403,
-                detail="Access denied.",
-            )
-
+        check_professor_access(assignment, current_user, db)
     elif current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied.",
-        )
+        raise HTTPException(status_code=403, detail="Access denied.")
 
     if not submission.stored_filename:
         raise HTTPException(
@@ -422,30 +492,14 @@ def download_submission_file(
         )
 
     stored_name = submission.stored_filename
-
     if Path(stored_name).name != stored_name:
-        raise HTTPException(
-            status_code=404,
-            detail="Invalid stored filename.",
-        )
-
-    upload_dir = (
-        Path(__file__).resolve().parents[2]
-        / "uploads"
-        / "assignment_submissions"
-    )
-
-    file_path = upload_dir / stored_name
-
+        raise HTTPException(status_code=404, detail="Invalid stored filename.")
+    file_path = UPLOAD_DIR / stored_name
     if not file_path.is_file():
-        raise HTTPException(
-            status_code=404,
-            detail="Submission file not found.",
-        )
+        raise HTTPException(status_code=404, detail="Submission file not found.")
 
     return FileResponse(
         path=file_path,
         filename=submission.original_filename or "submission",
         media_type="application/octet-stream",
     )
-
