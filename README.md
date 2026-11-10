@@ -216,16 +216,3 @@ npx playwright test --config playwright.config.ts
 
 The real-database Playwright suite is configured separately in `playwright.fullstack.config.ts`. Its database setup and seed commands are described in the technical commands document.
 
-## Project Documentation
-
-Detailed project documents are available in both PDF and editable Word formats:
-
-- [System documentation](docs/01-SYSTEM-DOCUMENTATION.pdf)
-- [Database model and ER diagram](docs/02-DATABASE-MODEL-AND-ERD.pdf)
-- [Test cases and quality assurance](docs/03-TEST-CASES-AND-QUALITY.pdf)
-- [API interface description](docs/04-API-INTERFACE.pdf)
-- [Technical commands and operations](docs/05-TECHNICAL-COMMANDS.pdf)
-- [Application directory structure](docs/06-PROJECT-STRUCTURE.pdf)
-- [Project history](docs/07-PROJECT-HISTORY.pdf)
-
-**Source code:** https://github.com/micomiki/University-LMS
