@@ -15,7 +15,9 @@ type LMSNotification = {
 
 type Props = {
   token: string
-  onOpenAssignment: (courseId: number) => void
+  // Navigate to the specific assignment (not just the course).
+  // A notification without assignment_id opens the course overview.
+  onOpenAssignment: (courseId: number, assignmentId: number | null) => void
 }
 
 async function requestJSON<T>(path: string, token: string, method = 'GET'): Promise<T> {
@@ -97,12 +99,13 @@ export default function NotificationCenter({ token, onOpenAssignment }: Props) {
   async function openAssignment(item: LMSNotification) {
     if (item.course_id === null) return
     setLoading(true)
-    if (item.read_at === null) {
-      await markRead(item.id)
+    try {
+      if (item.read_at === null) await markRead(item.id)
+      setOpen(false)
+      onOpenAssignment(item.course_id, item.assignment_id)
+    } finally {
+      setLoading(false)
     }
-    setOpen(false)
-    setLoading(false)
-    onOpenAssignment(item.course_id)
   }
 
   return (
@@ -112,16 +115,20 @@ export default function NotificationCenter({ token, onOpenAssignment }: Props) {
         type="button"
         aria-expanded={open}
         aria-controls="lms-notification-panel"
-        onClick={() => setOpen(value => !value)}
+        onClick={() => setOpen((value) => !value)}
       >
         Notifications{unread > 0 ? ` (${unread})` : ''}
       </button>
-
       {open && (
         <section id="lms-notification-panel" className="lms-notification-panel" aria-label="Notifications">
           <div className="lms-notification-heading">
             <h3>Notifications</h3>
-            <button type="button" className="btn-secondary" onClick={() => void markAllRead()} disabled={busy || unread === 0}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void markAllRead()}
+              disabled={busy || unread === 0}
+            >
               Mark all as read
             </button>
           </div>
@@ -130,7 +137,7 @@ export default function NotificationCenter({ token, onOpenAssignment }: Props) {
             <p className="lms-notification-empty">No notifications yet.</p>
           ) : (
             <ul className="lms-notification-list">
-              {notifications.map(item => (
+              {notifications.map((item) => (
                 <li key={item.id} className={`lms-notification-item ${item.read_at === null ? 'unread' : ''}`}>
                   <div className="lms-notification-item-title">
                     <strong>{item.title}</strong>
@@ -140,12 +147,21 @@ export default function NotificationCenter({ token, onOpenAssignment }: Props) {
                   <small>{new Date(item.created_at).toLocaleString()}</small>
                   <div className="lms-notification-actions">
                     {item.course_id !== null && (
-                      <button type="button" disabled={loading || busy} onClick={() => void openAssignment(item)}>
-                        View assignment
+                      <button
+                        type="button"
+                        disabled={loading || busy}
+                        onClick={() => void openAssignment(item)}
+                      >
+                        {item.assignment_id === null ? 'Open course' : 'View assignment'}
                       </button>
                     )}
                     {item.read_at === null && (
-                      <button type="button" className="btn-secondary" disabled={busy} onClick={() => void markRead(item.id)}>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={busy}
+                        onClick={() => void markRead(item.id)}
+                      >
                         Mark read
                       </button>
                     )}

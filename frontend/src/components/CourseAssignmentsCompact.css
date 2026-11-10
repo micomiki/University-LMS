@@ -1,0 +1,82 @@
+/* Assignment list: only the selected assignment contains its complete details. */
+.compact-assignment-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.compact-assignment-section-header h2 { margin-bottom: 0.35rem; }
+.compact-assignment-section-header p { margin-top: 0; }
+.compact-assignment-create { margin: 1rem 0 1.25rem; }
+.compact-assignments-list { display: grid; gap: 0.9rem; }
+.assignment-card--compact {
+  scroll-margin-top: 1rem;
+  min-width: 0;
+}
+.compact-assignment-summary {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+}
+.compact-assignment-main { min-width: 0; flex: 1 1 auto; }
+.compact-assignment-main h3 { margin: 0 0 0.45rem; }
+.compact-assignment-title {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.compact-assignment-title:hover { text-decoration: underline; }
+.compact-assignment-title:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.compact-assignment-meta,
+.compact-assignment-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+.compact-assignment-meta { font-size: 0.9rem; opacity: 0.85; }
+.compact-assignment-badges { margin-top: 0.65rem; }
+.compact-assignment-toggle { flex: 0 0 auto; }
+.compact-assignment-expanded {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #d6d9df);
+  min-width: 0;
+}
+.compact-assignment-description p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.assignment-card--compact.is-expanded {
+  outline: 1px solid var(--accent-border, #9eabc6);
+  outline-offset: 0;
+}
+/* Grading: one student is expanded at a time. */
+.grading-card--compact { min-width: 0; }
+.grading-card--compact .grading-header { gap: 0.8rem; flex-wrap: wrap; }
+.grading-card--compact .grading-header h4 { margin: 0 0 0.35rem; }
+.grading-card--compact .grading-header p { margin: 0; }
+.grading-card__details {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #d6d9df);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .compact-assignment-summary { flex-direction: column; align-items: stretch; }
+  .compact-assignment-toggle { width: 100%; }
+  .compact-assignment-section-header > button { width: 100%; }
+  .grading-card--compact .grading-header { align-items: flex-start; }
+}

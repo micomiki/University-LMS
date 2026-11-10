@@ -65,13 +65,13 @@ describe('NotificationCenter', () => {
     expect(calls).toContain('PATCH /api/notifications/5/read')
   })
 
-  it('opens the course after selecting a notification', async () => {
+  it('opens the related assignment after selecting a notification', async () => {
     mockAPI()
     const onOpenAssignment = vi.fn()
     render(<NotificationCenter token="test-token" onOpenAssignment={onOpenAssignment} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Notifications (1)' }))
     await userEvent.click(screen.getByRole('button', { name: 'View assignment' }))
-    await waitFor(() => expect(onOpenAssignment).toHaveBeenCalledWith(9))
+    await waitFor(() => expect(onOpenAssignment).toHaveBeenCalledWith(9, 20))
   })
 
   it('offers mark all as read', async () => {

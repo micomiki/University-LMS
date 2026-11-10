@@ -32,10 +32,15 @@ async function openAssignments(page: Page, professor = false) {
   await expect(page.getByRole('heading', { name: 'Course Assignments' })).toBeVisible()
 }
 
-function assignmentCard(page: Page, title: string) {
-  return page.locator('.assignment-card').filter({
+async function assignmentCard(page: Page, title: string) {
+  const card = page.locator('.assignment-card').filter({
     has: page.getByRole('heading', { name: title, exact: true }),
   })
+  await expect(card).toBeVisible()
+  // Assignment details are collapsed by default in the new UI.
+  await card.getByRole('button', { name: 'View details' }).click()
+  await expect(card.getByRole('button', { name: 'Hide details' })).toBeVisible()
+  return card
 }
 
 async function token(request: APIRequestContext, role: keyof typeof EMAIL) {
@@ -68,7 +73,7 @@ async function assignmentId(request: APIRequestContext, title: string) {
 test('student submits, edits current, adds attempt; professor comments; student sees feedback', async ({ page, request }) => {
   await signIn(page, 'student')
   await openAssignments(page)
-  const card = assignmentCard(page, 'E2E Multiple Attempts')
+  const card = await assignmentCard(page, 'E2E Multiple Attempts')
   const form = card.locator('.submission-form')
 
   await form.getByRole('button', { name: 'Submit Assignment' }).click()
@@ -113,7 +118,7 @@ test('student submits, edits current, adds attempt; professor comments; student 
   await page.getByRole('button', { name: 'Logout' }).click()
   await signIn(page, 'professor')
   await openAssignments(page, true)
-  const professorCard = assignmentCard(page, 'E2E Multiple Attempts')
+  const professorCard = await assignmentCard(page, 'E2E Multiple Attempts')
   await professorCard.getByRole('button', { name: 'View submission attempts and feedback' }).click()
   const firstAttempt = professorCard.locator('.attempt-review-card')
     .filter({ has: page.getByText('Attempt 1', { exact: true }) })
@@ -126,7 +131,7 @@ test('student submits, edits current, adds attempt; professor comments; student 
   await page.getByRole('button', { name: 'Logout' }).click()
   await signIn(page, 'student')
   await openAssignments(page)
-  const studentCard = assignmentCard(page, 'E2E Multiple Attempts')
+  const studentCard = await assignmentCard(page, 'E2E Multiple Attempts')
   await studentCard.getByRole('button', { name: 'View submission attempts and feedback' }).click()
   await expect(studentCard.getByText('Improve the introduction before your next attempt.')).toBeVisible()
 })
@@ -134,8 +139,9 @@ test('student submits, edits current, adds attempt; professor comments; student 
 test('professor grades a closed submission; student sees the result', async ({ page, request }) => {
   await signIn(page, 'professor')
   await openAssignments(page, true)
-  const card = assignmentCard(page, 'E2E Final Grading')
+  const card = await assignmentCard(page, 'E2E Final Grading')
   const grading = card.locator('.grading-section')
+  await grading.getByRole('button', { name: 'View submission' }).click()
   await expect(grading.getByRole('button', { name: 'Grade Submission' })).toBeVisible()
   await grading.getByRole('button', { name: 'Grade Submission' }).click()
   await grading.getByLabel(/Score \(maximum/).fill('88')
@@ -159,7 +165,7 @@ test('professor grades a closed submission; student sees the result', async ({ p
   await page.getByRole('button', { name: 'Logout' }).click()
   await signIn(page, 'student')
   await openAssignments(page)
-  const studentCard = assignmentCard(page, 'E2E Final Grading')
+  const studentCard = await assignmentCard(page, 'E2E Final Grading')
   await expect(studentCard).toContainText('88')
   await expect(studentCard.getByRole('button', { name: 'Edit Submission' })).toHaveCount(0)
 })

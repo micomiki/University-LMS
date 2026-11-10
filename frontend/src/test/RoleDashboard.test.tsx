@@ -81,7 +81,7 @@ describe('RoleDashboard data rules', () => {
 })
 
 describe('RoleDashboard UI', () => {
-  it('loads enrolled student assignments and opens the selected course', async () => {
+  it('loads enrolled student assignments and opens the selected assignment', async () => {
     mockFetch({
       '/api/enrollments/': [{ id: 9, course_id: 1, student_id: 4 }],
       '/api/submissions/my-submissions': [],
@@ -92,7 +92,7 @@ describe('RoleDashboard UI', () => {
     expect(await screen.findByText('Project 1')).toBeTruthy()
     expect(screen.queryByText('Other Course')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Open assignment' }))
-    expect(navigate).toHaveBeenCalledWith(1)
+    expect(navigate).toHaveBeenCalledWith(1, 11, undefined)
   })
 
   it('shows a professor\'s grading queue for work past deadline', async () => {

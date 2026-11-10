@@ -1,5 +1,14 @@
-import { test, expect } from '@playwright/test'
-import { mockLms, signIn, openCourseAssignments } from './mock-lms'
+import { test, expect, type Page } from '@playwright/test'
+import { mockLms, signIn, openCourseAssignments as openAssignmentsTab } from './mock-lms'
+
+// Open the first compact assignment card before interacting with its forms.
+async function openCourseAssignments(page: Page, role: 'STUDENT' | 'PROFESSOR') {
+  await openAssignmentsTab(page, role)
+  const button = page.locator('.assignment-card').first()
+    .getByRole('button', { name: 'View details' })
+  await expect(button).toBeVisible()
+  await button.click()
+}
 
 test('shows a login error without exposing the dashboard', async ({ page }) => {
   await mockLms(page, { role: 'STUDENT' })
@@ -86,6 +95,7 @@ test('professor can create a Multiple Submissions assignment', async ({ page }) 
   const state = await mockLms(page, { role: 'PROFESSOR' })
   await signIn(page, 'PROFESSOR')
   await openCourseAssignments(page, 'PROFESSOR')
+  await page.getByRole('button', { name: 'New assignment', exact: true }).click()
   await page.getByRole('button', { name: '+ Create Assignment' }).click()
   await page.getByLabel('Title').fill('New multiple-policy assignment')
   await page.getByLabel('Submission Deadline').fill('2099-03-18T12:00')

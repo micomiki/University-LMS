@@ -22,6 +22,7 @@ type Props = {
   assignmentId: number
   maxScore: number | string
   token: string
+  focusedSubmissionId?: number
 }
 
 async function getError(response: Response): Promise<string> {
@@ -36,6 +37,7 @@ export default function AssignmentGrading({
   assignmentId,
   maxScore,
   token,
+  focusedSubmissionId,
 }: Props) {
   const [submissions, setSubmissions] =
     useState<Submission[]>([])
@@ -44,6 +46,8 @@ export default function AssignmentGrading({
     useState<Record<number, Draft>>({})
 
   const [editingId, setEditingId] =
+    useState<number | null>(null)
+  const [selectedSubmissionId, setSelectedSubmissionId] =
     useState<number | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -82,6 +86,15 @@ export default function AssignmentGrading({
         if (controller.signal.aborted) return
 
         setSubmissions(data)
+        setSelectedSubmissionId((current) => {
+          if (focusedSubmissionId !== undefined &&
+              data.some((item) => item.id === focusedSubmissionId)) {
+            return focusedSubmissionId
+          }
+          return current !== null && data.some((item) => item.id === current)
+            ? current
+            : null
+        })
 
         const initialDrafts: Record<number, Draft> = {}
 
@@ -114,7 +127,14 @@ export default function AssignmentGrading({
     void loadSubmissions()
 
     return () => controller.abort()
-  }, [assignmentId, token, reloadKey])
+  }, [assignmentId, token, reloadKey, focusedSubmissionId])
+
+  useEffect(() => {
+    if (focusedSubmissionId === undefined || loading ||
+        selectedSubmissionId !== focusedSubmissionId) return
+    document.getElementById(`submission-${focusedSubmissionId}`)
+      ?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
+  }, [focusedSubmissionId, selectedSubmissionId, loading])
 
   function updateDraft(
     id: number,
@@ -279,11 +299,17 @@ export default function AssignmentGrading({
     }
   }
 
+  function toggleSubmission(submissionId: number) {
+    setSelectedSubmissionId((current) => current === submissionId ? null : submissionId)
+    setEditingId(null)
+    setError('')
+    setMessage('')
+  }
+
   return (
     <section className="grading-section">
       <div className="grading-header">
-        <h4>Student Submissions</h4>
-
+        <h4>Student Submissions ({submissions.length})</h4>
         <button
           type="button"
           className="btn-secondary"
@@ -294,187 +320,135 @@ export default function AssignmentGrading({
         </button>
       </div>
 
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
-
-      {message && (
-        <p className="success-message" role="status">
-          {message}
-        </p>
-      )}
+      {error && <p className="error" role="alert">{error}</p>}
+      {message && <p className="success-message" role="status">{message}</p>}
 
       {loading ? (
         <p>Loading submissions...</p>
       ) : submissions.length === 0 ? (
         !error && <p>No students have submitted yet.</p>
       ) : (
-        submissions.map((submission) => (
-          <article
-            key={submission.id}
-            className="grading-card"
-          >
-            <div className="grading-header">
-              <div>
-                <h4>
-                  Student #{submission.student_id}
-                </h4>
-
-                <p>
-                  Submitted:{' '}
-                  {new Date(
-                    submission.submitted_at
-                  ).toLocaleString()}
-                </p>
-              </div>
-
-              <AssignmentProgressBadge
-  status={
-    submission.score !== null
-      ? 'graded'
-      : 'under-review'
-  }
-/>
-            </div>
-
-            {/* Student's submitted response */}
-            <div className="grading-response">
-              <strong>Written Response</strong>
-
-              <p>
-                {submission.text_response ||
-                  'No written response.'}
-              </p>
-            </div>
-
-            {/* Attached file */}
-            {submission.original_filename && (
-              <div>
-                <p>
-                  <strong>Attached File:</strong>{' '}
-                  {submission.original_filename}
-                </p>
-
+        submissions.map((submission) => {
+          const expanded = selectedSubmissionId === submission.id
+          const detailsId = `grading-details-${submission.id}`
+          return (
+            <article
+              key={submission.id}
+              id={`submission-${submission.id}`}
+              className="grading-card grading-card--compact"
+            >
+              <div className="grading-header">
+                <div>
+                  <h4>Student #{submission.student_id}</h4>
+                  <p>Submitted: {new Date(submission.submitted_at).toLocaleString()}</p>
+                </div>
+                <AssignmentProgressBadge
+                  status={submission.score !== null ? 'graded' : 'under-review'}
+                />
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() =>
-                    void downloadFile(submission)
-                  }
+                  aria-expanded={expanded}
+                  aria-controls={detailsId}
+                  onClick={() => toggleSubmission(submission.id)}
                 >
-                  Download Submission
+                  {expanded ? 'Hide submission' : 'View submission'}
                 </button>
               </div>
-            )}
 
-            {/* Read-only grade summary */}
-            {submission.score !== null && (
-              <div className="submission-summary">
-                <p>
-                  <strong>Current Grade:</strong>{' '}
-                  {submission.score} / {maxScore}
-                </p>
-
-                {submission.feedback && (
-                  <div className="assignment-feedback">
-                    <strong>Professor Feedback</strong>
-                    <p>{submission.feedback}</p>
+              {expanded && (
+                <div id={detailsId} className="grading-card__details">
+                  <div className="grading-response">
+                    <strong>Written Response</strong>
+                    <p>{submission.text_response || 'No written response.'}</p>
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Grade / Update Grade button */}
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={savingId !== null}
-              onClick={() => toggleEditor(submission)}
-            >
-              {submission.score !== null
-                ? 'Update Grade'
-                : 'Grade Submission'}
-            </button>
+                  {submission.original_filename && (
+                    <div>
+                      <p><strong>Attached File:</strong> {submission.original_filename}</p>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => void downloadFile(submission)}
+                      >
+                        Download Submission
+                      </button>
+                    </div>
+                  )}
 
-            {/* Grading form hidden by default */}
-            {editingId === submission.id && (
-              <div className="grading-form">
-                <label
-                  htmlFor={`score-${submission.id}`}
-                >
-                  Score (maximum {maxScore})
-                </label>
-
-                <input
-                  id={`score-${submission.id}`}
-                  type="number"
-                  min="0"
-                  max={Number(maxScore)}
-                  step="0.01"
-                  value={
-                    drafts[submission.id]?.score ?? ''
-                  }
-                  onChange={(event) =>
-                    updateDraft(
-                      submission.id,
-                      'score',
-                      event.target.value
-                    )
-                  }
-                />
-
-                <label
-                  htmlFor={`feedback-${submission.id}`}
-                >
-                  Professor Feedback
-                </label>
-
-                <textarea
-                  id={`feedback-${submission.id}`}
-                  rows={4}
-                  value={
-                    drafts[submission.id]?.feedback ?? ''
-                  }
-                  onChange={(event) =>
-                    updateDraft(
-                      submission.id,
-                      'feedback',
-                      event.target.value
-                    )
-                  }
-                  placeholder="Write feedback..."
-                />
-
-                <div className="grading-actions">
-                  <button
-                    type="button"
-                    disabled={savingId !== null}
-                    onClick={() =>
-                      void saveGrade(submission)
-                    }
-                  >
-                    {savingId === submission.id
-                      ? 'Saving...'
-                      : 'Save Grade'}
-                  </button>
+                  {submission.score !== null && (
+                    <div className="submission-summary">
+                      <p><strong>Current Grade:</strong> {submission.score} / {maxScore}</p>
+                      {submission.feedback && (
+                        <div className="assignment-feedback">
+                          <strong>Professor Feedback</strong>
+                          <p>{submission.feedback}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <button
                     type="button"
                     className="btn-secondary"
                     disabled={savingId !== null}
-                    onClick={() =>
-                      cancelEditing(submission)
-                    }
+                    onClick={() => toggleEditor(submission)}
                   >
-                    Cancel
+                    {submission.score !== null ? 'Update Grade' : 'Grade Submission'}
                   </button>
+
+                  {editingId === submission.id && (
+                    <div className="grading-form">
+                      <label htmlFor={`score-${submission.id}`}>
+                        Score (maximum {maxScore})
+                      </label>
+                      <input
+                        id={`score-${submission.id}`}
+                        type="number"
+                        min="0"
+                        max={Number(maxScore)}
+                        step="0.01"
+                        value={drafts[submission.id]?.score ?? ''}
+                        onChange={(event) =>
+                          updateDraft(submission.id, 'score', event.target.value)
+                        }
+                      />
+                      <label htmlFor={`feedback-${submission.id}`}>
+                        Professor Feedback
+                      </label>
+                      <textarea
+                        id={`feedback-${submission.id}`}
+                        rows={4}
+                        value={drafts[submission.id]?.feedback ?? ''}
+                        onChange={(event) =>
+                          updateDraft(submission.id, 'feedback', event.target.value)
+                        }
+                        placeholder="Write feedback..."
+                      />
+                      <div className="grading-actions">
+                        <button
+                          type="button"
+                          disabled={savingId !== null}
+                          onClick={() => void saveGrade(submission)}
+                        >
+                          {savingId === submission.id ? 'Saving...' : 'Save Grade'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={savingId !== null}
+                          onClick={() => cancelEditing(submission)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </article>
-        ))
+              )}
+            </article>
+          )
+        })
       )}
     </section>
   )

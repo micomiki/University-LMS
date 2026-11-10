@@ -7,7 +7,7 @@ import AttendanceManager from './components/AttendanceManager'
 import AutomaticAttendanceReport from './components/AutomaticAttendanceReport'
 import RoleDashboard from './components/RoleDashboard'
 import CourseMaterials from './components/CourseMaterials'
-import CourseAssignments from './components/CourseAssignments'
+import CourseAssignments, { type AssignmentFocusRequest } from './components/CourseAssignments'
 import NotificationCenter from './components/NotificationCenter'
 import Sidebar, {
   type DashboardPage,
@@ -124,6 +124,7 @@ export default function App() {
 
   const [selectedCourseId, setSelectedCourseId] =
     useState<number | null>(null)
+  const [assignmentFocus, setAssignmentFocus] = useState<AssignmentFocusRequest | null>(null)
   
   const [courseSection, setCourseSection] =
   useState<CourseSection>('overview')  
@@ -188,6 +189,7 @@ export default function App() {
   }
 
   async function selectCourse(courseId: number) {
+    setAssignmentFocus(null)
     setSelectedCourseId(courseId)
     setMeetings([])
     setRoomName('')
@@ -299,6 +301,7 @@ async function cancelMeeting(meeting: Meeting) {
     setCourses([])
     setMeetings([])
     setSelectedCourseId(null)
+    setAssignmentFocus(null)
     setRoomName('')
     setError('')
     setPassword('')
@@ -353,10 +356,19 @@ async function cancelMeeting(meeting: Meeting) {
       </main>
     )
   }
-async function openAssignmentFromDashboard(courseId: number) {
+async function openAssignmentFromDashboard(
+  courseId: number,
+  assignmentId: number | null,
+  submissionId?: number,
+) {
   setPage('courses')
   await selectCourse(courseId)
-  setCourseSection('assignments')
+  if (assignmentId === null) {
+    setCourseSection('overview')
+  } else {
+    setAssignmentFocus({ assignmentId, submissionId })
+    setCourseSection('assignments')
+  }
 }
   return (
     <div className="lms-shell">
@@ -379,11 +391,8 @@ async function openAssignmentFromDashboard(courseId: number) {
           <div className="lms-topbar-actions">
   <NotificationCenter
     token={token}
-    onOpenAssignment={(courseId) => {
-      setPage('courses')
-      void selectCourse(courseId).then(() => {
-        setCourseSection('assignments')
-      })
+    onOpenAssignment={(courseId, assignmentId) => {
+      void openAssignmentFromDashboard(courseId, assignmentId)
     }}
   />
   <button onClick={logout}>Logout</button>
@@ -423,8 +432,8 @@ async function openAssignmentFromDashboard(courseId: number) {
         role={account.role}
         token={token}
         courses={courses}
-        onOpenAssignment={(courseId) => {
-          void openAssignmentFromDashboard(courseId)
+        onOpenAssignment={(courseId, assignmentId, submissionId) => {
+          void openAssignmentFromDashboard(courseId, assignmentId, submissionId)
         }}
       />
     )}
@@ -478,7 +487,10 @@ async function openAssignmentFromDashboard(courseId: number) {
 
       <CourseSubNav
         activeSection={courseSection}
-        onChange={setCourseSection}
+        onChange={(section) => {
+          setCourseSection(section)
+          if (section !== 'assignments') setAssignmentFocus(null)
+        }}
       />
     </section>
 
@@ -529,6 +541,7 @@ async function openAssignmentFromDashboard(courseId: number) {
       courseId={selectedCourseId}
       token={token}
       role={account.role}
+      focusRequest={assignmentFocus}
     />
   )}
 

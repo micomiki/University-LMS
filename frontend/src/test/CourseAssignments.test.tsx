@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import CourseAssignments from '../components/CourseAssignments'
 import { jsonResponse } from './helpers'
 
@@ -58,10 +59,35 @@ function stubAssignmentApi(options: {
   return fetchMock
 }
 
+async function openAssignmentDetails() {
+  const button = await screen.findByRole('button', { name: 'View details' })
+  await userEvent.click(button)
+}
+
 describe('CourseAssignments roles and deadline controls', () => {
+  it('keeps assignment details collapsed until an assignment is selected', async () => {
+    stubAssignmentApi({ role: 'student', withSubmission: true })
+    render(<CourseAssignments courseId={1} token="test-token" role="student" />)
+    const open = await screen.findByRole('button', { name: 'View details' })
+    expect(open.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByTestId('student-edit')).not.toBeInTheDocument()
+    await userEvent.click(open)
+    expect(screen.getByTestId('student-edit')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Hide details' }))
+    expect(screen.queryByTestId('student-edit')).not.toBeInTheDocument()
+  })
+
+  it('opens the focused assignment when navigating from the dashboard', async () => {
+    stubAssignmentApi({ role: 'student', withSubmission: true })
+    render(<CourseAssignments courseId={1} token="test-token" role="student" focusRequest={{ assignmentId: 3 }} />)
+    expect(await screen.findByTestId('student-edit')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hide details' }).getAttribute('aria-expanded')).toBe('true')
+  })
+
   it('shows edit and new-attempt controls for a student with Multiple Submissions before the deadline', async () => {
     stubAssignmentApi({ role: 'student', multiple: true, withSubmission: true })
     render(<CourseAssignments courseId={1} token="test-token" role="student" />)
+    await openAssignmentDetails()
 
     expect(await screen.findByTestId('student-edit')).toBeInTheDocument()
     expect(screen.getByTestId('new-attempt')).toBeInTheDocument()
@@ -73,6 +99,7 @@ describe('CourseAssignments roles and deadline controls', () => {
   it('never shows Add New Submission for Single Submission policy', async () => {
     stubAssignmentApi({ role: 'student', multiple: false, withSubmission: true })
     render(<CourseAssignments courseId={1} token="test-token" role="student" />)
+    await openAssignmentDetails()
 
     expect(await screen.findByTestId('student-edit')).toBeInTheDocument()
     expect(screen.queryByTestId('new-attempt')).not.toBeInTheDocument()
@@ -81,6 +108,7 @@ describe('CourseAssignments roles and deadline controls', () => {
   it('shows read-only final summary after the deadline, with no edit or new attempt', async () => {
     stubAssignmentApi({ role: 'student', multiple: true, pastDeadline: true, withSubmission: true })
     render(<CourseAssignments courseId={1} token="test-token" role="student" />)
+    await openAssignmentDetails()
 
     expect(await screen.findByTestId('final-summary')).toBeInTheDocument()
     expect(screen.queryByTestId('student-edit')).not.toBeInTheDocument()
@@ -91,8 +119,10 @@ describe('CourseAssignments roles and deadline controls', () => {
   it('lets a professor comment before the deadline but hides final grading', async () => {
     stubAssignmentApi({ role: 'professor', pastDeadline: false })
     render(<CourseAssignments courseId={1} token="test-token" role="professor" />)
+    await openAssignmentDetails()
 
     expect(await screen.findByTestId('attempt-history')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'New assignment' }))
     expect(screen.getByTestId('create-assignment')).toBeInTheDocument()
     expect(screen.queryByTestId('professor-grading')).not.toBeInTheDocument()
     expect(screen.getByText(/final grading opens after the assignment deadline/i)).toBeInTheDocument()
@@ -101,6 +131,7 @@ describe('CourseAssignments roles and deadline controls', () => {
   it('shows professor final grading after the deadline', async () => {
     stubAssignmentApi({ role: 'professor', pastDeadline: true })
     render(<CourseAssignments courseId={1} token="test-token" role="professor" />)
+    await openAssignmentDetails()
 
     expect(await screen.findByTestId('professor-grading')).toBeInTheDocument()
     expect(screen.getByTestId('attempt-history')).toBeInTheDocument()
@@ -109,8 +140,10 @@ describe('CourseAssignments roles and deadline controls', () => {
   it('allows an administrator to see final grading after the deadline', async () => {
     stubAssignmentApi({ role: 'admin', pastDeadline: true })
     render(<CourseAssignments courseId={1} token="test-token" role="admin" />)
+    await openAssignmentDetails()
 
     expect(await screen.findByTestId('professor-grading')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'New assignment' }))
     expect(screen.getByTestId('create-assignment')).toBeInTheDocument()
   })
 })

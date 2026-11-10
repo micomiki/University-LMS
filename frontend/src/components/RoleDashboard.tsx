@@ -107,7 +107,7 @@ type Props = {
   role: string
   token: string
   courses: DashboardCourse[]
-  onOpenAssignment: (courseId: number) => void
+  onOpenAssignment: (courseId: number, assignmentId: number, submissionId?: number) => void
 }
 
 async function getJson<T>(path: string, token: string, signal: AbortSignal): Promise<T> {
@@ -278,7 +278,7 @@ export default function RoleDashboard({ role, token, courses, onOpenAssignment }
                         <p>{row.course.course_code} · {formatDate(row.assignment.due_at)}</p>
                         <AssignmentProgressBadge status={row.status} />
                       </div>
-                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id)}>
+                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id, row.assignment.id, row.submission?.id)}>
                         Open assignment
                       </button>
                     </article>
@@ -296,7 +296,7 @@ export default function RoleDashboard({ role, token, courses, onOpenAssignment }
                         <strong>{row.assignment.title}</strong>
                         <p>{row.course.course_code} · Grade {row.submission?.score} / {row.assignment.max_score}</p>
                       </div>
-                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id)}>
+                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id, row.assignment.id, row.submission?.id)}>
                         View result
                       </button>
                     </article>
@@ -334,7 +334,7 @@ export default function RoleDashboard({ role, token, courses, onOpenAssignment }
                         <p>{row.course.course_code} · Student #{row.submission.student_id}</p>
                         <span className="rd-hint">Deadline passed · Grade pending</span>
                       </div>
-                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id)}>
+                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id, row.assignment.id, row.submission?.id)}>
                         Open grading
                       </button>
                     </article>
@@ -353,7 +353,7 @@ export default function RoleDashboard({ role, token, courses, onOpenAssignment }
                         <p>{row.course.course_code} · Student #{row.submission.student_id}</p>
                         <span className="rd-hint">Received {formatDate(row.submission.submitted_at)}</span>
                       </div>
-                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id)}>
+                      <button type="button" className="btn-secondary" onClick={() => onOpenAssignment(row.course.id, row.assignment.id, row.submission?.id)}>
                         Review work
                       </button>
                     </article>
