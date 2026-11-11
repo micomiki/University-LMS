@@ -1,0 +1,40 @@
+.admin-course-manager { margin-bottom: 24px; }
+.admin-course-manager__header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.admin-course-manager__header h2 { margin: 5px 0 7px; }
+.admin-course-manager__header p { margin: 0; color: #62708a; }
+.admin-course-manager__eyebrow { color: #6a4be0 !important; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.admin-course-manager__tabs { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid #dbe1ef; padding-bottom: 12px; margin-bottom: 18px; }
+.lms-shell .admin-course-manager__tabs button { background: #f1efff !important; color: #382a86 !important; border: 1px solid #ded7fc !important; border-radius: 10px; padding: 10px 16px; }
+.lms-shell .admin-course-manager__tabs button.active { background: #6045d8 !important; color: #fff !important; }
+.admin-course-manager__section { display: grid; gap: 12px; }
+.admin-course-manager__section-title { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.admin-course-manager__section-title h3 { margin: 0; }
+.admin-course-manager__section-title small { color: #64748b; }
+.admin-course-manager__form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 8px 0 12px; padding: 20px; border: 1px solid #dbe1ef; border-radius: 14px; background: #f9faff; }
+.admin-course-manager__form h3 { margin: 0; }
+.admin-course-manager label { display: flex; flex-direction: column; gap: 7px; font-size: 13px; font-weight: 650; }
+.admin-course-manager input:not([type='checkbox']), .admin-course-manager select, .admin-course-manager textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 12px; border-radius: 9px; border: 1px solid #9aa7c0; background: #fff; color: #182139; font: inherit; }
+.admin-course-manager__full { grid-column: 1 / -1; }
+.admin-course-manager .admin-course-manager__checkbox { flex-direction: row; align-items: center; gap: 8px; }
+.admin-course-manager .admin-course-manager__checkbox input { width: 18px; height: 18px; }
+.admin-course-manager__list { display: grid; gap: 10px; }
+.admin-course-manager__item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid #dbe1ef; border-radius: 12px; background: #fff; }
+.admin-course-manager__course { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.admin-course-manager__course strong { color: #17213c; }
+.admin-course-manager__course span { color: #586783; font-size: 12px; }
+.admin-course-manager__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lms-shell .admin-course-manager__secondary { background: #f0edff !important; color: #43319b !important; border: 1px solid #d4cafa !important; }
+.lms-shell .admin-course-manager__danger { background: #b42334 !important; color: #fff !important; border: 1px solid #b42334 !important; }
+.admin-course-manager__error { color: #bd2436 !important; font-weight: 600; }
+.admin-course-manager__success { color: #167b55 !important; font-weight: 600; }
+.admin-course-manager__active { color: #13804e !important; }
+.admin-course-manager__inactive { color: #bc3144 !important; }
+.admin-course-manager__note { color: #586783; font-size: 12px; }
+:root[data-lms-theme='dark'] .admin-course-manager__header p,:root[data-lms-theme='dark'] .admin-course-manager__course span,:root[data-lms-theme='dark'] .admin-course-manager__note { color: #cad2e7; }
+:root[data-lms-theme='dark'] .admin-course-manager__form,:root[data-lms-theme='dark'] .admin-course-manager__item { background: #222b43; border-color: #46516d; }
+:root[data-lms-theme='dark'] .admin-course-manager__course strong { color: #f3f5ff; }
+:root[data-lms-theme='dark'] .admin-course-manager input:not([type='checkbox']),:root[data-lms-theme='dark'] .admin-course-manager select,:root[data-lms-theme='dark'] .admin-course-manager textarea { background: #17213a; color: #f3f5ff; border-color: #66718d; }
+:root[data-lms-theme='dark'] .admin-course-manager__tabs { border-color: #46516d; }
+:root[data-lms-theme='dark'] .lms-shell .admin-course-manager__tabs button:not(.active) { background: #313c5d !important; color: #f2f0ff !important; border-color: #566383 !important; }
+:root[data-lms-theme='dark'] .lms-shell .admin-course-manager__secondary { background: #303b5a !important; color: #f1edff !important; border-color: #606b91 !important; }
+@media (max-width: 720px) { .admin-course-manager__form { grid-template-columns: 1fr; } .admin-course-manager__full { grid-column: 1; } .admin-course-manager__item { align-items: stretch; flex-direction: column; } }

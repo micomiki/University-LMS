@@ -50,8 +50,10 @@ describe('NotificationCenter', () => {
   it('shows unread count and notification details', async () => {
     mockAPI()
     render(<NotificationCenter token="test-token" onOpenAssignment={vi.fn()} />)
-    await screen.findByRole('button', { name: 'Notifications (1)' })
-    await userEvent.click(screen.getByRole('button', { name: 'Notifications (1)' }))
+    await screen.findByRole('button', { name: 'Notifications' })
+    // Unread count is displayed visually on the icon-only bell.
+    expect(screen.getByRole('button', { name: 'Notifications' }).querySelector('.lms-notification-count')?.textContent).toBe('1')
+    await userEvent.click(screen.getByRole('button', { name: 'Notifications' }))
     expect(screen.getByText('New feedback on your submission')).toBeTruthy()
     expect(screen.getByText('Your professor reviewed Attempt 1.')).toBeTruthy()
   })
@@ -59,7 +61,7 @@ describe('NotificationCenter', () => {
   it('marks an item as read and reduces the count', async () => {
     const { calls } = mockAPI()
     render(<NotificationCenter token="test-token" onOpenAssignment={vi.fn()} />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Notifications (1)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
     await userEvent.click(screen.getByRole('button', { name: 'Mark read' }))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Notifications' })).toBeTruthy())
     expect(calls).toContain('PATCH /api/notifications/5/read')
@@ -69,7 +71,7 @@ describe('NotificationCenter', () => {
     mockAPI()
     const onOpenAssignment = vi.fn()
     render(<NotificationCenter token="test-token" onOpenAssignment={onOpenAssignment} />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Notifications (1)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
     await userEvent.click(screen.getByRole('button', { name: 'View assignment' }))
     await waitFor(() => expect(onOpenAssignment).toHaveBeenCalledWith(9, 20))
   })
@@ -77,7 +79,7 @@ describe('NotificationCenter', () => {
   it('offers mark all as read', async () => {
     const { calls } = mockAPI()
     render(<NotificationCenter token="test-token" onOpenAssignment={vi.fn()} />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Notifications (1)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
     await userEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Notifications' })).toBeTruthy())
     expect(calls).toContain('PATCH /api/notifications/read-all')

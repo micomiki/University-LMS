@@ -1,3 +1,5 @@
+import './components/assignment-meeting-stage4.css'
+import './modern-layout.css'
 
 import { useState, type FormEvent } from 'react'
 import ScheduleMeetingForm from './components/ScheduleMeetingForm'
@@ -6,12 +8,20 @@ import TrackedClassroom from './components/TrackedClassroom'
 import AttendanceManager from './components/AttendanceManager'
 import AutomaticAttendanceReport from './components/AutomaticAttendanceReport'
 import RoleDashboard from './components/RoleDashboard'
+import AdminCourseManager from './components/AdminCourseManager'
 import CourseMaterials from './components/CourseMaterials'
 import CourseAssignments, { type AssignmentFocusRequest } from './components/CourseAssignments'
 import NotificationCenter from './components/NotificationCenter'
+import ThemeToggle from './components/ThemeToggle'
+import './stage5-polish.css'
+import './ui-contrast-icons.css'
+import './clean-minimal-stage7.css'
+import './stage7-visual-fix.css'
 import Sidebar, {
   type DashboardPage,
 } from './components/Sidebar'
+import CourseCatalog from './components/CourseCatalog'
+import CourseOverview from './components/CourseOverview'
 import CourseSubNav, {
   type CourseSection,
 } from './components/CourseSubNav'
@@ -313,7 +323,7 @@ async function cancelMeeting(meeting: Meeting) {
 
   if (!account) {
     return (
-      <main className="container">
+      <main className="container stage5-login">
         <header className="panel">
           <h1>University LMS</h1>
           <p>Learning Management System</p>
@@ -383,20 +393,24 @@ async function openAssignmentFromDashboard(
 
       <main className="lms-main">
         <div className="lms-topbar">
-          <div>
-            <h1>University LMS</h1>
-            <p>Learning Management Dashboard</p>
+          <div className="modern-page-heading">
+            <h1>{page === 'dashboard' ? 'Overview' : page === 'courses' ? 'My Courses' : 'Live Classroom'}</h1>
+            <p>University LMS · Your learning workspace</p>
           </div>
-
           <div className="lms-topbar-actions">
-  <NotificationCenter
-    token={token}
-    onOpenAssignment={(courseId, assignmentId) => {
-      void openAssignmentFromDashboard(courseId, assignmentId)
-    }}
-  />
-  <button onClick={logout}>Logout</button>
-</div>
+            <ThemeToggle />
+      <NotificationCenter
+        token={token}
+        onOpenAssignment={(courseId, assignmentId) => {
+          void openAssignmentFromDashboard(courseId, assignmentId)
+        }}
+      />
+            <div className="modern-profile-chip" aria-label={`Signed in as ${account.full_name}`}>
+              <span className="modern-profile-avatar" aria-hidden="true">{account.full_name.trim().charAt(0).toUpperCase()}</span>
+              <span className="modern-profile-meta"><strong>{account.full_name}</strong><small>{account.role}</small></span>
+            </div>
+            <button type="button" className="modern-logout-button" onClick={logout}>Logout</button>
+          </div>
         </div>
 
         {error && (
@@ -443,36 +457,19 @@ async function openAssignmentFromDashboard(
 
         {page === 'courses' && (
           <>
-            <section className="panel">
-              <h2>Courses</h2>
-
-              <div className="course-grid">
-                {courses.map((course) => (
-                  <article
-                    className="course-card"
-                    key={course.id}
-                  >
-                    <h3>{course.title}</h3>
-                    <p>{course.course_code}</p>
-                    <p>
-                      {course.description ||
-                        'No description available.'}
-                    </p>
-
-                    <button
-  disabled={loading}
-  onClick={() => selectCourse(course.id)}
->
-  Open Course
-</button>
-                  </article>
-                ))}
-              </div>
-
-              {courses.length === 0 && (
-                <p>No courses available.</p>
-              )}
-            </section>
+            {account.role.toLowerCase() === 'admin' && (
+              <AdminCourseManager
+                token={token}
+                courses={courses}
+                onCoursesChanged={setCourses}
+              />
+            )}
+            <CourseCatalog
+              courses={courses}
+              selectedCourseId={selectedCourseId}
+              loading={loading}
+              onOpenCourse={selectCourse}
+            />
 
 
 {/* Course Sub-Navigation */}
@@ -496,21 +493,9 @@ async function openAssignmentFromDashboard(
 
     {/* Course Overview */}
     {courseSection === 'overview' && (
-      <section className="panel">
-        <h2>Course Overview</h2>
-
-        <p>
-          {courses.find(
-            (course) => course.id === selectedCourseId
-          )?.description ||
-            'Welcome to this course.'}
-        </p>
-
-        <p>
-          Select Course Materials, Assignments,
-          or Meetings from the navigation above.
-        </p>
-      </section>
+      <CourseOverview
+        course={courses.find((course) => course.id === selectedCourseId)}
+      />
     )}
   </>
 )}
@@ -547,7 +532,7 @@ async function openAssignmentFromDashboard(
 
             {selectedCourseId !== null &&
   courseSection === 'meetings' && (
-  <section className="panel">
+  <section className="panel stage4-meetings">
                 <h2>Scheduled Meetings</h2>
 
                 {loading && <p>Loading meetings...</p>}
@@ -561,6 +546,7 @@ async function openAssignmentFromDashboard(
   <article
     className="meeting-card"
     key={meeting.id}
+  data-status={meeting.status}
   >
     <h3>{meeting.title}</h3>
 

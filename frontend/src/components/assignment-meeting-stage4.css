@@ -1,0 +1,79 @@
+/* Stage 4: University LMS assignments, submissions, and meetings.
+   Presentation only; submission, grading, meeting, and attendance behavior remains unchanged. */
+.lms-shell .compact-assignment-section-header { margin-bottom: 22px; align-items: flex-start; }
+.lms-shell .compact-assignment-section-header h2 { font-size: clamp(21px,2vw,27px); margin: 0 0 6px; letter-spacing: -.035em; }
+.lms-shell .compact-assignment-section-header p { color: #707994; max-width: 560px; line-height: 1.5; font-size: 14px; }
+.lms-shell .compact-assignment-section-header > .btn-secondary { background: #6450db; color: #fff; border: 1px solid #6450db; box-shadow: 0 7px 18px rgba(98,76,215,.2); font-weight: 650; }
+.lms-shell .compact-assignment-section-header > .btn-secondary:hover { background: #5140bc; color: #fff; }
+.lms-shell .compact-assignments-list { gap: 15px; }
+.lms-shell .assignment-card--compact { padding: 0; background: #fff; border: 1px solid #e5e7f4; border-radius: 17px; box-shadow: 0 5px 20px rgba(22,26,70,.035); overflow: hidden; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.lms-shell .assignment-card--compact:hover { border-color: #cec9f6; box-shadow: 0 10px 30px rgba(34,32,92,.075); }
+.lms-shell .assignment-card--compact.is-expanded { outline: none; border-color: #a69af1; box-shadow: 0 10px 34px rgba(91,70,190,.11); }
+.lms-shell .compact-assignment-summary { padding: 22px 24px; gap: 16px; }
+.lms-shell .compact-assignment-main h3 { margin-bottom: 11px; font-size: clamp(16px,1.5vw,19px); }
+.lms-shell .compact-assignment-title { color: #202449; letter-spacing: -.02em; font-weight: 750; text-decoration: none; }
+.lms-shell .compact-assignment-title:hover { color: #5e49c9; text-decoration: none; }
+.lms-shell .compact-assignment-meta { color: #69748e; font-size: 12px; gap: 8px 18px; }
+.lms-shell .compact-assignment-meta strong { color: #434866; font-weight: 650; }
+.lms-shell .compact-assignment-badges { gap: 8px; margin-top: 14px; }
+.lms-shell .assignment-card--compact .assignment-status,
+.lms-shell .assignment-card--compact .assignment-progress-badge { display: inline-flex; align-items: center; width: fit-content; min-height: 26px; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 999px; letter-spacing: .015em; }
+.lms-shell .assignment-card--compact .assignment-status.open { background: #eef5ff; color: #345fba; border-color: #d9e7ff; }
+.lms-shell .assignment-card--compact .assignment-status.overdue { background: #fff2e8; color: #b26826; border-color: #f6dfc8; }
+.lms-shell .compact-assignment-toggle { min-height: 41px; padding: 9px 16px; color: #5746bd; border: 1px solid #ddd7fb; background: #f5f2ff; font-weight: 650; white-space: nowrap; }
+.lms-shell .compact-assignment-toggle:hover { background: #e9e3ff; border-color: #c8bef6; }
+.lms-shell .compact-assignment-expanded { margin: 0; padding: 22px 24px 26px; background: linear-gradient(180deg,#fbfbff,#fff 90px); border-top: 1px solid #ebe9f5; }
+.lms-shell .compact-assignment-expanded > * + * { margin-top: 20px; }
+.lms-shell .compact-assignment-description,
+.lms-shell .assignment-card--compact .assignment-instructions,
+.lms-shell .grading-card__details .grading-response { background: #f7f8ff; padding: 16px 18px; border: 1px solid #eaeafa; border-radius: 13px; color: #46516c; }
+.lms-shell .compact-assignment-description strong,
+.lms-shell .assignment-card--compact .assignment-instructions strong { color: #293052; }
+.lms-shell .compact-assignment-description p,
+.lms-shell .assignment-card--compact .assignment-instructions p { line-height: 1.6; margin: 8px 0 0; }
+.lms-shell .compact-assignment-create { background: #faf9ff; border: 1px solid #e6e2fa; border-radius: 15px; padding: 20px; }
+.lms-shell .assignment-manage-actions,
+.lms-shell .grading-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.lms-shell .assignment-card--compact input,
+.lms-shell .assignment-card--compact textarea,
+.lms-shell .assignment-card--compact select { max-width: 100%; border: 1px solid #dcdff0; border-radius: 10px; background: #fff; }
+.lms-shell .assignment-card--compact input:focus-visible,
+.lms-shell .assignment-card--compact textarea:focus-visible,
+.lms-shell .assignment-card--compact select:focus-visible { outline: 3px solid #dcd5ff; border-color: #8c7bf3; }
+/* Student submission and instructor grading */
+.lms-shell .assignment-card--compact .submission-form,
+.lms-shell .assignment-card--compact .grading-section { background: #fff; border-radius: 14px; border: 1px solid #eceaf7; padding: 18px; }
+.lms-shell .assignment-card--compact .grading-section .grading-header { gap: 14px; flex-wrap: wrap; }
+.lms-shell .assignment-card--compact .grading-section > .grading-header h4 { margin: 0; color: #2b3051; }
+.lms-shell .assignment-card--compact .grading-card--compact { border-radius: 12px; border: 1px solid #e7e8f4; box-shadow: none; background: #fff; overflow: hidden; }
+.lms-shell .assignment-card--compact .grading-card--compact + .grading-card--compact { margin-top: 12px; }
+.lms-shell .assignment-card--compact .grading-card--compact > .grading-header { padding: 15px 17px; margin: 0; }
+.lms-shell .assignment-card--compact .grading-card__details { margin-top: 0; padding: 16px 18px; background: #fbfbff; border-color: #e9eaf6; }
+.lms-shell .assignment-card--compact .grading-form { background: #fff; border: 1px solid #e4e5f1; border-radius: 12px; padding: 16px; }
+/* Meeting directory */
+.lms-shell .stage4-meetings { background: transparent; border: none; padding: 0; box-shadow: none; }
+.lms-shell .stage4-meetings > h2 { font-size: clamp(21px,2vw,27px); margin: 0 0 20px; padding: 0 0 0 13px; border-left: 4px solid #7258e8; }
+.lms-shell .stage4-meetings .meeting-card { position: relative; padding: 23px 24px 20px; margin-bottom: 16px; background: #fff; border: 1px solid #e7e8f4; border-radius: 17px; box-shadow: 0 6px 22px rgba(24,26,72,.045); overflow: hidden; }
+.lms-shell .stage4-meetings .meeting-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: #7258e8; }
+.lms-shell .stage4-meetings .meeting-card[data-status='cancelled']::before { background: #d4d7e5; }
+.lms-shell .stage4-meetings .meeting-card h3 { margin: 0 0 12px; color: #262b50; font-size: 18px; letter-spacing: -.02em; }
+.lms-shell .stage4-meetings .meeting-card > p { color: #67728b; line-height: 1.55; margin: 7px 0; font-size: 13px; }
+.lms-shell .stage4-meetings .meeting-card > p:first-of-type { font-size: 14px; margin-bottom: 14px; }
+.lms-shell .stage4-meetings .meeting-card > p strong { display: inline-flex; border: 1px solid #d8d0ff; border-radius: 100px; padding: 4px 10px; background: #f4f0ff; color: #5e49c6; font-size: 11px; text-transform: capitalize; }
+.lms-shell .stage4-meetings .meeting-card[data-status='cancelled'] > p strong { color: #6d7487; border-color: #e4e6ed; background: #f2f3f7; }
+.lms-shell .stage4-meetings .meeting-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 18px 0 8px; }
+.lms-shell .stage4-meetings .meeting-actions button { margin: 0; min-height: 38px; font-size: 12px; font-weight: 650; }
+.lms-shell .stage4-meetings .meeting-card > button.btn-secondary { margin-top: 6px; }
+.lms-shell .stage4-meetings .meeting-card form { margin-top: 14px; padding: 16px; background: #fafaff; border: 1px solid #eaebf5; border-radius: 12px; }
+/* A stable, accessible mobile layout */
+@media (max-width: 720px) {
+  .lms-shell .compact-assignment-summary { padding: 18px; align-items: stretch; }
+  .lms-shell .compact-assignment-expanded { padding: 17px; }
+  .lms-shell .compact-assignment-toggle { width: 100%; }
+  .lms-shell .compact-assignment-create { padding: 14px; }
+  .lms-shell .stage4-meetings .meeting-card { padding: 18px; }
+  .lms-shell .stage4-meetings .meeting-actions button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lms-shell .assignment-card--compact { transition: none; }
+}

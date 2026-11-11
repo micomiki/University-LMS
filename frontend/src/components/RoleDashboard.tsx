@@ -3,6 +3,7 @@ import AssignmentProgressBadge, {
   getAssignmentProgress,
   type AssignmentProgressStatus,
 } from './AssignmentProgress'
+import WeeklyDeadlineStrip from './WeeklyDeadlineStrip'
 import './RoleDashboard.css'
 
 export type DashboardCourse = {
@@ -266,7 +267,8 @@ export default function RoleDashboard({ role, token, courses, onOpenAssignment }
             <Metric label="Awaiting final grading" value={studentRows.filter((row) => row.status === 'under-review').length} />
             <Metric label="Graded assignments" value={studentRows.filter((row) => row.status === 'graded').length} />
           </div>
-          <div className="rd-sections">
+          <WeeklyDeadlineStrip rows={studentRows} now={now} />
+           <div className="rd-sections">
             <section className="rd-panel" aria-labelledby="rd-deadlines">
               <h3 id="rd-deadlines">Upcoming deadlines</h3>
               {upcoming.length === 0 ? <p>No upcoming deadlines in your enrolled courses.</p> : (

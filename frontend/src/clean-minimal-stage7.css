@@ -1,0 +1,198 @@
+/* University LMS — Stage 7: clean, minimal titles, links and accessible theme controls.
+   Load after modern-layout, stage5-polish and ui-contrast-icons. Presentation only. */
+.lms-shell {
+  --clean-text: #202645;
+  --clean-muted: #58627e;
+  --clean-card: #ffffff;
+  --clean-tint: #f7f8fc;
+  --clean-border: #e1e5f0;
+  --clean-link: #5140b8;
+}
+
+/* Assignment titles are disclosure buttons, not primary actions.
+   Higher specificity protects them from the earlier global purple-button rule. */
+.lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title,
+.lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:not(:disabled),
+.lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:hover,
+.lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:focus-visible {
+  display: inline;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--clean-text);
+  font: inherit;
+  font-weight: 750;
+  line-height: 1.45;
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:hover {
+  color: var(--clean-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:focus-visible {
+  outline: 3px solid #a598f0;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+/* Clean panels instead of alternating white and dark-block backgrounds. */
+.lms-shell .assignment-card--compact .compact-assignment-description,
+.lms-shell .assignment-card--compact .assignment-instructions,
+.lms-shell .assignment-card--compact .grading-section,
+.lms-shell .assignment-card--compact .grading-card__details,
+.lms-shell .grading-section .grading-response,
+.lms-shell .grading-section .submission-summary,
+.lms-shell .grading-section .assignment-feedback {
+  color: var(--clean-text);
+  background: var(--clean-tint);
+  border: 1px solid var(--clean-border);
+  border-radius: 13px;
+}
+.lms-shell .assignment-card--compact :is(.compact-assignment-description,.assignment-instructions) > strong,
+.lms-shell .grading-section :is(.grading-header,.grading-response,.submission-summary,.assignment-feedback) strong,
+.lms-shell .grading-section .grading-header h4 {
+  color: var(--clean-text);
+}
+.lms-shell .assignment-card--compact :is(.compact-assignment-description,.assignment-instructions) p,
+.lms-shell .grading-section .grading-response p,
+.lms-shell .grading-section .grading-card__details p {
+  color: var(--clean-muted);
+}
+.lms-shell .assignment-card--compact .grading-section > .grading-header h4,
+.lms-shell .assignment-card--compact .grading-card--compact h4 {
+  color: var(--clean-text);
+}
+
+/* Filenames and resource links: ordinary readable text, never purple filled chips. */
+.lms-shell :is(.assignment-card--compact,.grading-card__details,.materials-list,.course-materials,.assignment-attempts,.attempt-card) a:not([role="button"]),
+.lms-shell :is(.assignment-card--compact,.grading-card__details,.materials-list,.course-materials,.assignment-attempts,.attempt-card) a:not([role="button"]):visited {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: var(--clean-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.lms-shell :is(.assignment-card--compact,.grading-card__details,.materials-list,.course-materials,.assignment-attempts,.attempt-card) a:not([role="button"]):hover {
+  color: #39298f;
+}
+/* Download actions rendered as buttons retain button affordance, but avoid dark purple labels. */
+.lms-shell :is(.grading-card__details,.assignment-attempts,.attempt-card) button.btn-secondary {
+  background: #f0edff;
+  color: #4230a0;
+  border: 1px solid #d7cff9;
+}
+.lms-shell :is(.grading-card__details,.assignment-attempts,.attempt-card) button.btn-secondary:hover:not(:disabled) {
+  background: #e5e0ff;
+  color: #332080;
+}
+
+/* Theme control: compact pill with consistent icon and label alignment. */
+.lms-shell .lms-topbar-actions .stage5-theme-toggle,
+.lms-shell .stage5-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 9px 14px;
+  background: #f0edff;
+  color: #3d2d96;
+  border: 1px solid #d8d0f7;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: none;
+  white-space: nowrap;
+}
+.lms-shell .stage5-theme-toggle:hover:not(:disabled) {
+  background: #e4ddff;
+  color: #30217d;
+}
+.lms-shell .stage5-theme-toggle > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  font-size: 19px;
+  line-height: 1;
+}
+.lms-shell .stage5-theme-toggle:focus-visible { outline: 3px solid #aa9bf5; outline-offset: 3px; }
+
+/* Dark mode uses the same visual hierarchy with higher text contrast. */
+:root[data-lms-theme='dark'] .lms-shell {
+  --clean-text: #f1f3ff;
+  --clean-muted: #c6cde1;
+  --clean-card: #1b2238;
+  --clean-tint: #222b43;
+  --clean-border: #46516d;
+  --clean-link: #bcaeff;
+}
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .compact-assignment-expanded {
+  background: #1b2238;
+  border-top-color: var(--clean-border);
+}
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title,
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:not(:disabled),
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:focus-visible {
+  background: transparent;
+  color: var(--clean-text);
+  border: 0;
+}
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .compact-assignment-main h3 > button.compact-assignment-title:hover {
+  background: transparent;
+  color: var(--clean-link);
+}
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .compact-assignment-description,
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .assignment-instructions,
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .grading-section,
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .grading-card__details,
+:root[data-lms-theme='dark'] .lms-shell .grading-section .grading-response,
+:root[data-lms-theme='dark'] .lms-shell .grading-section .submission-summary,
+:root[data-lms-theme='dark'] .lms-shell .grading-section .assignment-feedback {
+  background: var(--clean-tint);
+  border-color: var(--clean-border);
+  color: var(--clean-text);
+}
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact :is(.compact-assignment-description,.assignment-instructions) > strong,
+:root[data-lms-theme='dark'] .lms-shell .grading-section :is(.grading-header,.grading-response,.submission-summary,.assignment-feedback) strong,
+:root[data-lms-theme='dark'] .lms-shell .grading-section .grading-header h4,
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .grading-section > .grading-header h4,
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact .grading-card--compact h4 { color: var(--clean-text); }
+:root[data-lms-theme='dark'] .lms-shell .assignment-card--compact :is(.compact-assignment-description,.assignment-instructions) p,
+:root[data-lms-theme='dark'] .lms-shell .grading-section .grading-response p,
+:root[data-lms-theme='dark'] .lms-shell .grading-section .grading-card__details p { color: var(--clean-muted); }
+:root[data-lms-theme='dark'] .lms-shell :is(.grading-card__details,.assignment-attempts,.attempt-card) button.btn-secondary {
+  background: #303955;
+  color: #f2efff;
+  border-color: #5c6685;
+}
+:root[data-lms-theme='dark'] .lms-shell :is(.grading-card__details,.assignment-attempts,.attempt-card) button.btn-secondary:hover:not(:disabled) {
+  background: #404b6a;
+  color: #ffffff;
+}
+:root[data-lms-theme='dark'] .lms-shell .lms-topbar-actions .stage5-theme-toggle,
+:root[data-lms-theme='dark'] .lms-shell .stage5-theme-toggle {
+  background: #303955;
+  color: #f6f2ff;
+  border-color: #66718f;
+}
+:root[data-lms-theme='dark'] .lms-shell .stage5-theme-toggle:hover:not(:disabled) {
+  background: #404c6d;
+  color: #ffffff;
+}
+@media (max-width: 440px) {
+  .lms-shell .stage5-theme-toggle { padding: 9px 11px; }
+  .lms-shell .stage5-theme-label { display: none; }
+}

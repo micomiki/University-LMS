@@ -1,0 +1,111 @@
+/* University LMS UI consistency patch — loaded AFTER Stages 1–5.
+   Semantic states (danger, secondary, disabled) are styled separately. */
+.lms-shell { --ui-accent: #5b43d6; --ui-accent-hover: #4731b8; --ui-focus: #a79af9; }
+/* Fix the Stage 1 background-only button rule: primary actions need light text. */
+.lms-shell button:not(.lms-nav-button):not(.modern-collapse-button):not(.modern-mobile-menu):not(.modern-logout-button):not(.btn-danger):not(.btn-secondary):not(.stage5-theme-toggle):not(.lms-notification-toggle):not(.course-subnav-button):not(.course-open-button):not(.compact-assignment-toggle):not([class*="notification"]):not([class*="secondary"]):not([class*="outline"]):not([class*="ghost"]):not(:disabled) {
+  background: var(--ui-accent);
+  color: #fff;
+  border-color: transparent;
+}
+.lms-shell button:not(.lms-nav-button):not(.modern-collapse-button):not(.modern-mobile-menu):not(.modern-logout-button):not(.btn-danger):not(.btn-secondary):not(.stage5-theme-toggle):not(.lms-notification-toggle):not(.course-subnav-button):not(.course-open-button):not(.compact-assignment-toggle):not([class*="notification"]):not([class*="secondary"]):not([class*="outline"]):not([class*="ghost"]):not(:disabled):hover {
+  background: var(--ui-accent-hover);
+  color: #fff;
+}
+/* Primary buttons that opt into dedicated component classes. */
+.lms-shell .course-catalog-card .course-open-button,
+.lms-shell .course-catalog-card .course-open-button:not(:disabled),
+.lms-shell .compact-assignment-section-header > .btn-secondary,
+.lms-shell .compact-assignment-section-header > .btn-secondary:not(:disabled) {
+  background: var(--ui-accent);
+  color: #fff;
+  border: 1px solid var(--ui-accent);
+}
+.lms-shell .course-catalog-card .course-open-button:hover:not(:disabled),
+.lms-shell .compact-assignment-section-header > .btn-secondary:hover:not(:disabled) { background: var(--ui-accent-hover); color: #fff; }
+/* Course tabs: transparent/inactive and strong purple selected, both readable. */
+.lms-shell .course-subnav .course-subnav-button,
+.lms-shell .course-subnav .course-subnav-button:not(.active) { background: #f1f0fb; color: #34365b; border: 1px solid #e1def5; }
+.lms-shell .course-subnav .course-subnav-button:hover:not(.active) { background: #e6e1fb; color: #31247a; }
+.lms-shell .course-subnav .course-subnav-button.active,
+.lms-shell .course-subnav .course-subnav-button.active:hover { background: var(--ui-accent); color: #fff; border-color: var(--ui-accent); }
+/* Contextual secondary actions must not receive the global solid-purple background. */
+.lms-shell .btn-secondary,
+.lms-shell .compact-assignment-toggle,
+.lms-shell .modern-logout-button { background: #f0edff; color: #4230a0; border: 1px solid #d7cff9; }
+.lms-shell .btn-secondary:hover:not(:disabled),
+.lms-shell .compact-assignment-toggle:hover:not(:disabled),
+.lms-shell .modern-logout-button:hover:not(:disabled) { background: #e2dcff; color: #38238e; }
+.lms-shell .btn-danger { background: #b42333; color: #fff; border-color: #b42333; }
+.lms-shell .btn-danger:hover:not(:disabled) { background: #8e1a29; color: #fff; }
+.lms-shell button:disabled { opacity: .58; cursor: not-allowed; }
+.lms-shell .course-search-wrap input { color: #242948; }
+.lms-shell .course-search-wrap input::placeholder { color: #717996; opacity: 1; }
+.lms-shell .course-description { color: #59627e; }
+.lms-shell .course-selected { color: #276a59; }
+/* Bell: icon-only visual control with accessible name, badge and consistent dimensions. */
+.lms-shell .lms-notification-center { position: relative; flex: none; }
+.lms-shell .lms-notification-toggle.lms-notification-bell {
+  position: relative; width: 44px; height: 44px; min-width: 44px; padding: 0;
+  display: inline-flex; justify-content: center; align-items: center;
+  background: #f0edff; color: #4731a5; border: 1px solid #dcd4fa;
+  border-radius: 12px; box-shadow: none;
+}
+.lms-shell .lms-notification-toggle.lms-notification-bell:hover { background: #e4deff; color: #322282; }
+.lms-shell .lms-notification-bell svg { height: 20px; width: 20px; display: block; }
+.lms-shell .lms-notification-count {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+  border-radius: 99px; padding: 0 4px; color: #fff; background: #ae2444;
+  font-size: 10px; line-height: 18px; font-weight: 800; text-align: center;
+}
+/* Sidebar collapse toggle: icon-only and centered, never shifts between states. */
+.lms-shell .modern-sidebar .modern-collapse-button,
+.lms-shell .modern-sidebar.is-collapsed .modern-collapse-button {
+  width: 42px; min-width: 42px; height: 42px; padding: 0;
+  align-self: center; flex: none; margin: 12px auto 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #eef0ff; border: 1px solid #424968; background: #2c3353;
+  border-radius: 12px;
+}
+.lms-shell .modern-sidebar .modern-collapse-button svg { width: 20px; height: 20px; }
+.lms-shell .modern-sidebar .modern-collapse-button:hover:not(:disabled) { color: #fff; background: #434978; }
+/* Stable alignment on browser reload and when title length changes. */
+.lms-shell .lms-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.lms-shell .modern-page-heading { min-width: 0; flex: 1 1 auto; }
+.lms-shell .lms-topbar-actions { display: flex; align-items: center; flex: 0 0 auto; justify-content: flex-end; flex-wrap: nowrap; gap: 10px; }
+.lms-shell .lms-topbar-actions > * { flex-shrink: 0; }
+.lms-shell :is(button,a,input,select,textarea):focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+/* Dark mode — override previous hard-coded light selectors and keep contrast. */
+:root[data-lms-theme='dark'] .lms-shell { --ui-accent: #8169f6; --ui-accent-hover: #6850db; --ui-focus: #c4b9ff; }
+:root[data-lms-theme='dark'] .lms-shell .course-subnav .course-subnav-button:not(.active),
+:root[data-lms-theme='dark'] .lms-shell .btn-secondary,
+:root[data-lms-theme='dark'] .lms-shell .compact-assignment-toggle,
+:root[data-lms-theme='dark'] .lms-shell .modern-logout-button { background: #323a5a; color: #f1efff; border-color: #5a6385; }
+:root[data-lms-theme='dark'] .lms-shell .course-subnav .course-subnav-button.active { background: #775ff0; color: #fff; border-color: #775ff0; }
+:root[data-lms-theme='dark'] .lms-shell .course-catalog-card .course-open-button { background: #775ff0; color: #fff; border-color: #775ff0; }
+:root[data-lms-theme='dark'] .lms-shell .lms-notification-toggle.lms-notification-bell { background: #30365b; color: #edeaff; border-color: #5f648f; }
+:root[data-lms-theme='dark'] .lms-shell .course-description,
+:root[data-lms-theme='dark'] .lms-shell .course-catalog-intro,
+:root[data-lms-theme='dark'] .lms-shell .course-overview-description,
+:root[data-lms-theme='dark'] .lms-shell .course-search-label,
+:root[data-lms-theme='dark'] .lms-shell .course-overview-hint { color: #c3cbe1; }
+:root[data-lms-theme='dark'] .lms-shell .course-card-body,
+:root[data-lms-theme='dark'] .lms-shell .course-overview-navigation div { background: #1b2238; color: #f0f2ff; border-color: #3e4766; }
+:root[data-lms-theme='dark'] .lms-shell .course-overview-navigation strong,
+:root[data-lms-theme='dark'] .lms-shell .course-subnav h2 { color: #f1f3ff; }
+:root[data-lms-theme='dark'] .lms-shell .course-search-wrap { background: #202941; border-color: #4b5676; }
+:root[data-lms-theme='dark'] .lms-shell .course-search-wrap input,
+:root[data-lms-theme='dark'] .lms-shell .course-search-wrap input::placeholder { color: #e5e9f9; }
+:root[data-lms-theme='dark'] .lms-shell .course-code,
+:root[data-lms-theme='dark'] .lms-shell .course-count { background: #34305e; color: #f1eeff; border-color: #6657a3; }
+:root[data-lms-theme='dark'] .lms-shell .course-selected { color: #9ff1c7; }
+@media (max-width: 850px) {
+  .lms-shell .lms-topbar { flex-wrap: wrap; }
+  .lms-shell .lms-topbar-actions { flex-wrap: wrap; width: 100%; justify-content: flex-start; }
+}
+@media (max-width: 768px) {
+  .lms-shell .modern-sidebar .modern-collapse-button,
+  .lms-shell .modern-sidebar.is-collapsed .modern-collapse-button { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lms-shell button, .lms-shell .modern-sidebar { transition: none !important; }
+}

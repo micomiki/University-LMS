@@ -119,7 +119,9 @@ test('closed assignments show read-only results for students', async ({ page }) 
 test('student reads a feedback notification and clears the unread count', async ({ page }) => {
   const state = await mockLms(page, { role: 'STUDENT', seededSubmission: true })
   await signIn(page, 'STUDENT')
-  const notificationButton = page.getByRole('button', { name: 'Notifications (1)' })
+  const notificationButton = page.getByRole('button', { name: 'Notifications' })
+  // Verify the unread count badge separately from the accessible bell label.
+  await expect(notificationButton.locator('.lms-notification-count')).toHaveText('1')
   await expect(notificationButton).toBeVisible()
   await notificationButton.click()
   await expect(page.getByText('New feedback on your submission')).toBeVisible()

@@ -111,13 +111,20 @@ export default function NotificationCenter({ token, onOpenAssignment }: Props) {
   return (
     <div className="lms-notification-center">
       <button
-        className="lms-notification-toggle"
+        className="lms-notification-toggle lms-notification-bell"
+        aria-label="Notifications"
+        title="Notifications"
         type="button"
         aria-expanded={open}
         aria-controls="lms-notification-panel"
         onClick={() => setOpen((value) => !value)}
       >
-        Notifications{unread > 0 ? ` (${unread})` : ''}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
+          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M10 21h4" />
+        </svg>
+        {unread > 0 && <span className="lms-notification-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
       </button>
       {open && (
         <section id="lms-notification-panel" className="lms-notification-panel" aria-label="Notifications">
